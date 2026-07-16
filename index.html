@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestionnaire de Tournoi Volley 4x4 sur Herbe</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS pour lire les fichiers Excel (.xlsx) directement en JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght=300;400;500;600;700;800&display=swap');
         body {
             font-family: 'Outfit', sans-serif;
             background-color: #f4f7f5;
+        }
+        /* Transition douce pour le mode TV */
+        .fade-slide {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
         }
     </style>
     <script>
@@ -37,37 +44,37 @@
 </head>
 <body class="text-gray-800 min-h-screen pb-12">
 
+    <!-- ========================================== -->
+    <!-- ÉCRAN 1 : INTERFACE DE GESTION COMPLETE    -->
+    <!-- ========================================== -->
     <div id="view-admin" class="block">
+        <!-- Header Section -->
         <header class="relative bg-gradient-to-br from-grass-900 via-grass-800 to-emerald-950 text-white py-10 px-4 shadow-lg mb-8">
             <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="text-center md:text-left">
-                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full">CASSON • 22 mai 2027</span>
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full">Format Suisse • Arbitrage Intégré</span>
                     <h1 class="text-3xl md:text-5xl font-extrabold mt-3 tracking-tight flex items-center justify-center md:justify-start gap-3">
-                        <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi de Volley 4x4 sur herbe
+                        <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi Volley Herbe
                     </h1>
                     <p class="text-sm md:text-base text-emerald-100/80 mt-1">6 Terrains Disponibles • Début 10h30 | Fin 18h00</p>
                 </div>
                 
-                <div class="flex flex-col items-center gap-3">
-                    <button onclick="navigateToView('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2">
-                        <i class="fa-solid fa-tv text-grass-600"></i> Voir l'Écran Public (Résultats)
+                <!-- Navigation vers les affichages publics -->
+                <div class="flex flex-col items-stretch sm:items-center gap-2">
+                    <button onclick="navigateToView('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau)
                     </button>
-                    <div class="flex flex-wrap justify-center gap-2">
-                        <div class="bg-white/5 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-center min-w-[70px]">
-                            <span class="block text-sm font-bold text-grass-200">15 min</span>
-                            <span class="text-[9px] text-gray-300 uppercase">Match</span>
-                        </div>
-                        <div class="bg-white/5 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-center min-w-[70px]">
-                            <span class="block text-sm font-bold text-grass-200">5 min</span>
-                            <span class="text-[9px] text-gray-300 uppercase">Rotat.</span>
-                        </div>
-                    </div>
+                    <button onclick="navigateToView('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant (1 par 1)
+                    </button>
                 </div>
             </div>
         </header>
 
         <main class="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Column 1 & 2: Setup & Matches -->
             <div class="lg:col-span-2 space-y-8">
+                <!-- Team Setup Panel -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                         <div>
@@ -84,6 +91,7 @@
                         </div>
                     </div>
 
+                    <!-- Tabs mode d'intégration -->
                     <div class="mb-6 border-b border-gray-200">
                         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="import-tabs" role="tablist">
                             <li class="mr-2" role="presentation">
@@ -104,7 +112,9 @@
                         </ul>
                     </div>
 
+                    <!-- CONTENU ONGLETS -->
                     <div>
+                        <!-- Onglet 1: Saisie Unique -->
                         <div id="tab-single" class="block space-y-4">
                             <div class="flex flex-wrap gap-2">
                                 <input type="text" id="new-team-name" placeholder="Nom de l'équipe..." 
@@ -119,6 +129,7 @@
                             </div>
                         </div>
 
+                        <!-- Onglet 2: Copier-coller -->
                         <div id="tab-bulk" class="hidden space-y-3">
                             <label class="block text-xs font-semibold text-gray-500 uppercase">Colle ici une colonne brute copiée d'un tableur :</label>
                             <textarea id="bulk-teams-input" rows="4" placeholder="Équipe 1&#10;Équipe 2&#10;Équipe 3..." 
@@ -128,6 +139,7 @@
                             </button>
                         </div>
 
+                        <!-- Onglet 3: Fichier Excel -->
                         <div id="tab-file" class="hidden space-y-3">
                             <label class="block text-xs font-semibold text-gray-500 uppercase">Importe un fichier Excel ou CSV (colonne A lue) :</label>
                             <div class="flex items-center justify-center w-full">
@@ -143,6 +155,7 @@
                         </div>
                     </div>
 
+                    <!-- Team Tags Container -->
                     <div id="teams-container" class="mt-6 flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-dashed border-gray-200 rounded-xl bg-gray-50/50 mb-4">
                         <p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>
                     </div>
@@ -154,13 +167,14 @@
                     </div>
                 </section>
 
+                <!-- Interactive Matches / Courts Panel -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                         <div>
                             <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                                 <i class="fa-solid fa-circle-play text-grass-600"></i> 2. Matchs en Cours & Saisie des Scores
                             </h2>
-                            <p class="text-xs text-gray-500">Saisissez les scores. Les équipes au repos arbitrent en priorité (doublons possibles).</p>
+                            <p class="text-xs text-gray-500">Saisissez les scores. Les équipes au repos arbitrent en priorité.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span id="current-round-label" class="bg-grass-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">Ronde -</span>
@@ -170,6 +184,7 @@
                         </div>
                     </div>
 
+                    <!-- 6 Courts Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="courts-grid">
                         <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
                             <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
@@ -179,7 +194,9 @@
                 </section>
             </div>
 
+            <!-- Column 3: Standings & Timeline -->
             <div class="space-y-8">
+                <!-- Live Dynamic Standings -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
                     <div class="flex justify-between items-center mb-4">
                         <div>
@@ -217,46 +234,21 @@
                         </table>
                     </div>
                 </section>
-
-                <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <i class="fa-regular fa-clock text-grass-600"></i> Programme Estimé
-                    </h2>
-                    <div class="relative border-l-2 border-gray-100 pl-4 space-y-4">
-                        <div class="relative">
-                            <span class="absolute -left-[21px] top-1 bg-grass-600 border-4 border-white w-4 h-4 rounded-full"></span>
-                            <div class="text-xs font-semibold text-grass-700">10h30 - 10h45</div>
-                            <div class="text-xs font-bold text-gray-800">Ronde 1</div>
-                        </div>
-                        <div class="relative">
-                            <span class="absolute -left-[21px] top-1 bg-grass-600 border-4 border-white w-4 h-4 rounded-full"></span>
-                            <div class="text-xs font-semibold text-grass-700">10h50 - 12h25</div>
-                            <div class="text-xs font-bold text-gray-800">Rondes de la matinée</div>
-                        </div>
-                        <div class="relative">
-                            <span class="absolute -left-[21px] top-1 bg-amber-500 border-4 border-white w-4 h-4 rounded-full"></span>
-                            <div class="text-xs font-semibold text-amber-700">12h25 - 13h10</div>
-                            <div class="text-xs font-bold text-amber-900">Pause repas - Barbecue</div>
-                        </div>
-                        <div class="relative">
-                            <span class="absolute -left-[21px] top-1 bg-grass-600 border-4 border-white w-4 h-4 rounded-full"></span>
-                            <div class="text-xs font-semibold text-grass-700">13h10 - 17h50</div>
-                            <div class="text-xs font-bold text-gray-800">Rondes de l'après-midi</div>
-                        </div>
-                    </div>
-                </section>
             </div>
         </main>
     </div>
 
 
+    <!-- ========================================== -->
+    <!-- ÉCRAN 2 : AFFICHAGE PUBLIC CLASSIQUE       -->
+    <!-- ========================================== -->
     <div id="view-public" class="hidden">
         <header class="bg-gradient-to-r from-emerald-950 to-grass-900 text-white py-6 px-4 shadow-md mb-8">
             <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="text-center sm:text-left">
                     <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Écran Public</span>
                     <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight mt-1 flex items-center justify-center sm:justify-start gap-2">
-                        <i class="fa-solid fa-volleyball text-grass-500 animate-bounce"></i> Matchs & Résultats en Direct
+                        <i class="fa-solid fa-volleyball text-grass-500"></i> Matchs & Résultats en Direct
                     </h1>
                 </div>
                 <button id="back-to-admin-btn" onclick="navigateToView('admin')" class="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all border border-white/20 flex items-center gap-1.5">
@@ -274,8 +266,7 @@
                         </h2>
                         <span id="public-round-label" class="bg-grass-700 text-white text-xs font-bold px-3 py-1 rounded-lg">Ronde -</span>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="public-courts-grid">
-                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="public-courts-grid"></div>
                 </div>
             </div>
 
@@ -285,7 +276,6 @@
                         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                             <i class="fa-solid fa-ranking-star text-grass-600"></i> Classement en Direct
                         </h2>
-                        <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 font-bold rounded-full animate-pulse">MAJ</span>
                     </div>
                     <div class="overflow-x-auto border border-gray-100 rounded-xl">
                         <table class="w-full text-left border-collapse">
@@ -297,11 +287,7 @@
                                     <th class="py-3 px-2 text-center w-14">M.J.</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 text-sm" id="public-standings-body">
-                                <tr>
-                                    <td colspan="4" class="py-6 text-center text-xs text-gray-400">Aucun classement disponible.</td>
-                                </tr>
-                            </tbody>
+                            <tbody class="divide-y divide-gray-100 text-sm" id="public-standings-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -309,52 +295,255 @@
         </main>
     </div>
 
-    <footer class="text-center text-xs text-gray-400 mt-12">
-        <p>VolleyHerbe 2026 • Tournoi interactif à la volée 🌿</p>
-    </footer>
 
+    <!-- ========================================== -->
+    <!-- ÉCRAN 3 : NOUVEAU CAROUSEL TV DÉFILANT    -->
+    <!-- ========================================== -->
+    <div id="view-tv" class="hidden bg-gray-950 min-h-screen text-white flex flex-col justify-between p-6">
+        <!-- Header TV -->
+        <div class="flex justify-between items-center border-b border-gray-800 pb-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-volleyball text-grass-500 text-3xl animate-spin" style="animation-duration: 10s;"></i>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-wide uppercase text-gray-100">Tournoi Volley Herbe</h1>
+                    <p class="text-xs text-grass-400 font-bold tracking-widest uppercase">Affichage en direct</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="tv-round-label" class="bg-grass-600 text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider">RONDE -</span>
+                <button id="tv-back-btn" onclick="navigateToView('admin')" class="bg-white/10 hover:bg-white/20 text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
+                    <i class="fa-solid fa-xmark"></i> Quitter la TV
+                </button>
+            </div>
+        </div>
+
+        <!-- Zone du Slide actif -->
+        <div class="flex-1 flex items-center justify-center py-10">
+            <div id="tv-carousel-container" class="w-full max-w-4xl bg-gray-900 border border-gray-800 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden transition-all duration-500 transform scale-100">
+                <!-- Rempli en JS par un seul terrain géant -->
+            </div>
+        </div>
+
+        <!-- Indicateur de progression / Footer TV -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-900 pt-4 text-xs text-gray-500">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-grass-500 animate-ping"></span>
+                <span>Changement automatique toutes les 5 secondes</span>
+            </div>
+            <!-- Petites puces pour savoir où on en est -->
+            <div id="tv-bullets" class="flex gap-1.5"></div>
+        </div>
+    </div>
+
+
+    <!-- App Logic Script -->
     <script>
         let teams = [];
         let currentRound = 1;
         let tournamentActive = false;
         let matches = [];
 
-        // Pool de noms fictifs
+        // Gestion du carrousel TV
+        let tvInterval = null;
+        let tvSlides = []; // Contient la liste des objets à afficher [{type: 'match', data: matchObj}, {type: 'idle', data: [...]}]
+        let currentTvIndex = 0;
+
         const sampleNames = [
             "Les Smashers Verts", "Block Party", "Grass Finders", "Service Gagnant",
             "AeroSpike", "Ace Ventura", "Les 4 Fantastiques", "Herbe & Volley",
             "Sand-o-Herbe", "Net Raiders", "Les Serveurs Fous", "Plongeon Fatal",
-            "La Smacherie", "Passe Décisive", "Volley-au-Vent", "Les Gazons Maudits",
-            "Green Giants", "Air Volley", "Les Pissenlits", "Spike’N’Roll",
-            "Les Volleyeurs du Dimanche", "Réception Parfaite", "Le Grand Block-out"
+            "La Smacherie", "Passe Décisive", "Volley-au-Vent"
         ];
 
-        // --- DEUX VUES (ADMIN vs PUBLIC) ---
+        // --- NAVIGATION DES VUES ---
         function navigateToView(view) {
-            const adminView = document.getElementById('view-admin');
-            const publicView = document.getElementById('view-public');
+            // Arrêter le défilement TV si on quitte l'écran TV
+            if (tvInterval) {
+                clearInterval(tvInterval);
+                tvInterval = null;
+            }
+
+            document.getElementById('view-admin').className = 'hidden';
+            document.getElementById('view-public').className = 'hidden';
+            document.getElementById('view-tv').className = 'hidden';
             
             if (view === 'results') {
-                adminView.className = 'hidden';
-                publicView.className = 'block';
+                document.getElementById('view-public').className = 'block';
                 renderPublicUI();
+            } else if (view === 'tv') {
+                document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
+                startTvCarousel();
             } else {
-                adminView.className = 'block';
-                publicView.className = 'hidden';
+                document.getElementById('view-admin').className = 'block';
             }
         }
 
-        // Vérification automatique à l'ouverture de la page si l'URL demande l'écran public directement :
+        // Routage par URL (?view=results ou ?view=tv)
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('view') === 'results') {
+            const viewParam = params.get('view');
+            if (viewParam === 'results') {
                 navigateToView('results');
-                // On cache le bouton de retour à l'admin pour éviter la triche si partagé sur téléphone
                 document.getElementById('back-to-admin-btn').className = 'hidden';
+            } else if (viewParam === 'tv') {
+                navigateToView('tv');
+                document.getElementById('tv-back-btn').className = 'hidden';
             }
         });
 
-        // --- GESTION DES TABS D'IMPORTATION ---
+        // --- CAROUSEL TV EN DIRECT (Défilé automatique) ---
+        function startTvCarousel() {
+            currentTvIndex = 0;
+            buildTvSlides();
+            renderTvSlide();
+
+            // Lancement du timer de 5 secondes
+            tvInterval = setInterval(() => {
+                if (tvSlides.length > 1) {
+                    currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
+                    renderTvSlide();
+                }
+            }, 5000);
+        }
+
+        function buildTvSlides() {
+            tvSlides = [];
+            const currentMatches = matches.filter(m => m.round === currentRound);
+            
+            if (!tournamentActive || currentMatches.length === 0) {
+                // Pas de match en cours
+                tvSlides.push({ type: 'empty' });
+                return;
+            }
+
+            // 1. On crée un slide pour chaque terrain actif
+            const playingMatches = currentMatches.filter(m => m.court > 0);
+            playingMatches.forEach(m => {
+                tvSlides.push({ type: 'match', data: m });
+            });
+
+            // 2. On crée un slide global pour les équipes exemptes ou au repos
+            const restingMatches = currentMatches.filter(m => m.isResting || m.isBye);
+            if (restingMatches.length > 0) {
+                tvSlides.push({ type: 'idle', data: restingMatches });
+            }
+        }
+
+        function renderTvSlide() {
+            const container = document.getElementById('tv-carousel-container');
+            const bulletsContainer = document.getElementById('tv-bullets');
+            
+            document.getElementById('tv-round-label').innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
+
+            if (tvSlides.length === 0) return;
+            const slide = tvSlides[currentTvIndex];
+
+            // Animation de fondu rapide
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.97)';
+
+            setTimeout(() => {
+                if (slide.type === 'empty') {
+                    container.innerHTML = `
+                        <div class="text-center py-12">
+                            <i class="fa-solid fa-volleyball text-6xl text-gray-700 animate-bounce mb-6"></i>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-400">En attente du lancement de la ronde...</h2>
+                            <p class="text-sm text-gray-600 mt-2">Dès que l'organisateur aura lancé la ronde, les matchs défileront ici en direct.</p>
+                        </div>
+                    `;
+                } 
+                else if (slide.type === 'match') {
+                    const m = slide.data;
+                    const statusBadge = m.played 
+                        ? `<span class="bg-green-500/20 text-green-400 border border-green-500/30 text-xs px-3.5 py-1 rounded-full font-bold uppercase tracking-widest"><i class="fa-solid fa-circle-check"></i> Saisi</span>`
+                        : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-3.5 py-1 rounded-full font-bold animate-pulse uppercase tracking-widest"><i class="fa-solid fa-stopwatch"></i> En cours</span>`;
+
+                    container.innerHTML = `
+                        <div class="text-center space-y-8">
+                            <div class="flex justify-between items-center border-b border-gray-800 pb-4">
+                                <span class="bg-grass-600/20 text-grass-300 border border-grass-500/30 font-black text-xl px-4 py-1 rounded-xl">TERRAIN ${m.court}</span>
+                                ${statusBadge}
+                            </div>
+
+                            <!-- Match d'équipes en géant -->
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-6 py-6">
+                                <div class="flex-1 text-center sm:text-left min-w-0 w-full">
+                                    <h3 class="text-2xl sm:text-4xl font-extrabold text-white truncate drop-shadow-md" title="${m.team1}">${m.team1}</h3>
+                                </div>
+
+                                <!-- Bloc Score -->
+                                <div class="bg-gray-950 border border-gray-800 px-8 py-4 rounded-3xl font-black text-5xl sm:text-6xl flex items-center gap-4 tracking-wider text-grass-400 shadow-inner">
+                                    <span>${m.played ? m.score1 : '-'}</span>
+                                    <span class="text-gray-700 text-3xl">-</span>
+                                    <span>${m.played ? m.score2 : '-'}</span>
+                                </div>
+
+                                <div class="flex-1 text-center sm:text-right min-w-0 w-full">
+                                    <h3 class="text-2xl sm:text-4xl font-extrabold text-white truncate drop-shadow-md" title="${m.team2}">${m.team2}</h3>
+                                </div>
+                            </div>
+
+                            <!-- Bloc Arbitre en bas -->
+                            <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-center gap-3">
+                                <i class="fa-solid fa-whistle text-amber-500 text-2xl"></i>
+                                <div class="text-left">
+                                    <p class="text-[10px] text-amber-500/80 uppercase tracking-widest font-bold">Corps Arbitral</p>
+                                    <p class="text-base sm:text-lg font-bold text-amber-200">Arbitre : <strong>${m.referee}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } 
+                else if (slide.type === 'idle') {
+                    const idleList = slide.data;
+                    container.innerHTML = `
+                        <div class="space-y-6">
+                            <div class="border-b border-gray-800 pb-4">
+                                <span class="bg-blue-600/20 text-blue-300 border border-blue-500/30 font-black text-sm px-4 py-1.5 rounded-xl uppercase tracking-widest">Équipes Exemptes & Arbitres au Repos</span>
+                            </div>
+
+                            <p class="text-sm text-gray-400">Les équipes suivantes ne jouent pas cette ronde. Elles sont prioritaires pour arbitrer sur les terrains.</p>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                                ${idleList.map(m => {
+                                    if (m.isBye) {
+                                        return `
+                                        <div class="bg-blue-950/40 border border-blue-900 p-4 rounded-2xl flex items-center gap-3">
+                                            <i class="fa-solid fa-star text-blue-400 text-xl"></i>
+                                            <div>
+                                                <p class="text-xs text-blue-400 font-bold uppercase">Exempté de match</p>
+                                                <p class="text-base font-bold text-white">${m.team1}</p>
+                                            </div>
+                                        </div>`;
+                                    } else {
+                                        return `
+                                        <div class="bg-gray-950/60 border border-gray-800 p-4 rounded-2xl flex items-center gap-3">
+                                            <i class="fa-solid fa-bed text-gray-500 text-xl"></i>
+                                            <div>
+                                                <p class="text-xs text-gray-500 font-bold uppercase">En repos (Arbitre)</p>
+                                                <p class="text-base font-bold text-white">${m.team1}</p>
+                                            </div>
+                                        </div>`;
+                                    }
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Ré-affichage progressif de la carte
+                container.style.opacity = '1';
+                container.style.transform = 'scale(1)';
+            }, 300);
+
+            // Mise à jour des puces indicatrices en bas
+            bulletsContainer.innerHTML = tvSlides.map((_, idx) => `
+                <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === currentTvIndex ? 'bg-grass-500 w-6' : 'bg-gray-800'}"></span>
+            `).join('');
+        }
+
+
+        // --- CODE IDENTIQUE AUX SESSIONS PRÉCÉDENTES POUR LA GESTION ---
         function switchTab(tabId) {
             document.getElementById('tab-single').className = 'hidden';
             document.getElementById('tab-bulk').className = 'hidden';
@@ -376,13 +565,11 @@
             }
         }
 
-        // --- IMPORTS ÉQUIPES ---
         function importBulkTeams() {
             if (tournamentActive) return;
             const textarea = document.getElementById('bulk-teams-input');
             const lines = textarea.value.split('\n');
             let addedCount = 0;
-
             lines.forEach(line => {
                 const name = line.trim();
                 if (name && !teams.includes(name)) {
@@ -390,7 +577,6 @@
                     addedCount++;
                 }
             });
-
             textarea.value = '';
             alert(`${addedCount} équipe(s) ajoutée(s) !`);
             switchTab('single');
@@ -537,7 +723,6 @@
             }
         }
 
-        // --- ALGORITHME ROTATION & ARBITRAGE ---
         function generateSwissRound() {
             const standings = getSortedStandingsList();
             
@@ -561,7 +746,6 @@
             let court = 1;
             let idleTeams = []; 
 
-            // Exempt / Bye
             if (priorityList.length % 2 !== 0) {
                 let exemptCandidates = priorityList.filter(t => !matches.some(m => m.isBye && m.team1 === t.name));
                 if (exemptCandidates.length === 0) exemptCandidates = priorityList;
@@ -582,7 +766,6 @@
                 });
             }
 
-            // Terrains Actifs (max 6)
             let tempActiveMatches = [];
             for (let i = 0; i < priorityList.length && court <= 6; i++) {
                 let t1 = priorityList[i].name;
@@ -610,7 +793,6 @@
                 }
             }
 
-            // Repos
             for (let i = 0; i < priorityList.length; i++) {
                 let t = priorityList[i].name;
                 if (!paired.has(t)) {
@@ -630,7 +812,6 @@
                 }
             }
 
-            // Distribution Arbitres
             tempActiveMatches.forEach((match, index) => {
                 if (idleTeams.length > 0) {
                     const refereeIndex = index % idleTeams.length;
@@ -645,7 +826,6 @@
             renderCourts();
         }
 
-        // --- RENDER INTERFACES ---
         function renderCourts() {
             const grid = document.getElementById('courts-grid');
             const currentMatches = matches.filter(m => m.round === currentRound);
@@ -704,11 +884,11 @@
             if (restingMatches.length > 0) {
                 html += `
                 <div class="col-span-full bg-gray-50 border border-gray-150 rounded-2xl p-4">
-                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-bed mr-1.5"></i> Équipes exemptes / En repos (Arbitres)</h4>
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-bed mr-1.5"></i> Équipes exemptes / En repos</h4>
                     <div class="flex flex-wrap gap-2">
                         ${restingMatches.map(m => {
                             if (m.isBye) {
-                                return `<span class="bg-blue-50 text-blue-800 border border-blue-200 text-xs font-medium px-2.5 py-1 rounded-lg"><strong>${m.team1}</strong> (Exempt - 3 pts)</span>`;
+                                return `<span class="bg-blue-50 text-blue-800 border border-blue-200 text-xs font-medium px-2.5 py-1 rounded-lg"><strong>${m.team1}</strong> (Exempt)</span>`;
                             }
                             return `<span class="bg-gray-100 text-gray-600 border border-gray-200 text-xs font-medium px-2.5 py-1 rounded-lg"><strong>${m.team1}</strong> (Repos)</span>`;
                         }).join('')}
@@ -720,7 +900,6 @@
             grid.innerHTML = html;
         }
 
-        // --- RENDER DYNAMIQUE DE L'ÉCRAN PUBLIC (Miroir) ---
         function renderPublicUI() {
             const grid = document.getElementById('public-courts-grid');
             document.getElementById('public-round-label').innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
@@ -728,92 +907,47 @@
             const currentMatches = matches.filter(m => m.round === currentRound);
 
             if (currentMatches.length === 0) {
-                grid.innerHTML = `
-                <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-150 rounded-2xl">
-                    <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce"></i>
-                    <p class="text-sm">Le tournoi n'a pas encore démarré. Les matchs apparaîtront ici en direct dès le coup d'envoi !</p>
-                </div>`;
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-150 rounded-2xl"><p class="text-sm">Le tournoi n'a pas encore démarré.</p></div>`;
                 return;
             }
 
             const playingMatches = currentMatches.filter(m => m.court > 0);
             const restingMatches = currentMatches.filter(m => m.isResting || m.isBye);
 
-            let html = playingMatches.map(m => {
-                // Style différent si le match est terminé
-                const cardStyle = m.played 
-                    ? "border-green-200 bg-green-50/20" 
-                    : "border-gray-200 bg-white shadow-sm";
-                
+            grid.innerHTML = playingMatches.map(m => {
+                const cardStyle = m.played ? "border-green-200 bg-green-50/20" : "border-gray-200 bg-white shadow-sm";
                 const statusBadge = m.played 
-                    ? `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i class="fa-solid fa-check"></i> Terminé</span>`
-                    : `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold animate-pulse flex items-center gap-1"><i class="fa-solid fa-stopwatch"></i> En cours</span>`;
+                    ? `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">Terminé</span>`
+                    : `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold animate-pulse flex items-center gap-1">En cours</span>`;
 
                 return `
-                <div class="border rounded-2xl p-5 transition-all ${cardStyle}">
+                <div class="border rounded-2xl p-5 ${cardStyle}">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="font-extrabold text-grass-900 text-sm flex items-center gap-1.5">
-                            <span class="bg-grass-100 text-grass-800 text-[10px] py-0.5 px-2.5 rounded-md">Terrain ${m.court}</span>
-                        </span>
+                        <span class="font-extrabold text-grass-900 text-sm">Terrain ${m.court}</span>
                         ${statusBadge}
                     </div>
-
-                    <div class="mb-4 flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-100/70 px-2 py-0.5 rounded-lg w-max">
-                        <i class="fa-solid fa-whistle text-amber-600"></i>
-                        <span>Arbitre : <strong>${m.referee}</strong></span>
+                    <div class="mb-3 text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded w-max">
+                        Arbitre : <strong>${m.referee}</strong>
                     </div>
-
                     <div class="flex items-center justify-between gap-4">
-                        <div class="flex-1 min-w-0">
-                            <div class="font-extrabold text-gray-800 text-sm truncate" title="${m.team1}">${m.team1}</div>
+                        <div class="font-extrabold text-gray-800 text-sm truncate flex-1">${m.team1}</div>
+                        <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1 rounded-lg font-extrabold">
+                            <span>${m.played ? m.score1 : '-'}</span><span>-</span><span>${m.played ? m.score2 : '-'}</span>
                         </div>
-
-                        <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl font-extrabold text-lg">
-                            <span class="text-gray-800 w-6 text-center">${m.played ? m.score1 : '-'}</span>
-                            <span class="text-gray-300">-</span>
-                            <span class="text-gray-800 w-6 text-center">${m.played ? m.score2 : '-'}</span>
-                        </div>
-
-                        <div class="flex-1 min-w-0 text-right">
-                            <div class="font-extrabold text-gray-800 text-sm truncate" title="${m.team2}">${m.team2}</div>
-                        </div>
+                        <div class="font-extrabold text-gray-800 text-sm truncate flex-1 text-right">${m.team2}</div>
                     </div>
                 </div>
                 `;
             }).join('');
 
-            if (restingMatches.length > 0) {
-                html += `
-                <div class="col-span-full bg-gray-50 border border-gray-200 rounded-2xl p-4">
-                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-bed mr-1"></i> Équipes exemptes / Au repos (Arbitres)</h4>
-                    <div class="flex flex-wrap gap-2">
-                        ${restingMatches.map(m => {
-                            if (m.isBye) {
-                                return `<span class="bg-blue-50 text-blue-800 border border-blue-200 text-xs font-semibold px-2.5 py-1 rounded-lg">${m.team1} (Exempt)</span>`;
-                            }
-                            return `<span class="bg-gray-100 text-gray-600 border border-gray-200 text-xs font-semibold px-2.5 py-1 rounded-lg">${m.team1} (Repos)</span>`;
-                        }).join('')}
-                    </div>
-                </div>`;
-            }
-
-            grid.innerHTML = html;
-
-            // Mettre aussi à jour le classement en direct sur l'écran public
             const tbodyPublic = document.getElementById('public-standings-body');
             const sorted = getSortedStandingsList();
-
-            if (sorted.length === 0) {
-                tbodyPublic.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-xs text-gray-400">Aucune équipe disponible.</td></tr>`;
-                return;
-            }
-
             tbodyPublic.innerHTML = sorted.map((team, idx) => `
-                <tr class="hover:bg-grass-50/50 transition-colors">
-                    <td class="py-2.5 px-3 text-center font-bold text-gray-500 text-xs">${idx + 1}</td>
-                    <td class="py-2.5 px-2 font-bold text-gray-800 truncate max-w-[150px]">${team.name}</td>
-                    <td class="py-2.5 px-2 text-center text-grass-700 font-extrabold">${team.points}</td>
-                    <td class="py-2.5 px-2 text-center text-gray-400 text-xs">${team.played}</td>
+                <tr class="hover:bg-grass-50/50">
+                    <td class="py-2 px-3 text-center font-bold text-gray-500 text-xs">${idx + 1}</td>
+                    <td class="py-2 px-2 font-bold text-gray-800">${team.name}</td>
+                    <td class="py-2 px-2 text-center text-grass-700 font-extrabold">${team.points}</td>
+                    <td class="py-2 px-2 text-center text-gray-400 text-xs">${team.played}</td>
                 </tr>
             `).join('');
         }
@@ -839,12 +973,9 @@
 
             matches.forEach(m => {
                 if (!m.played) return;
-                
                 if (m.isBye) {
                     const t = list.find(x => x.name === m.team1);
-                    if (t) {
-                        t.points += 3; t.played++; t.wins++;
-                    }
+                    if (t) { t.points += 3; t.played++; t.wins++; }
                     return;
                 }
 
