@@ -517,53 +517,45 @@
         // --- NETTOYAGE UNIQUE ET GLOBAL (FIREBASE + LOCAL) ---
         function globalReset() {
             if (confirm("🚨 ATTENTION : Voulez-vous TOUT réinitialiser ? Cela va effacer toutes les équipes, vider les matchs et réinitialiser complètement le tournoi sur Firebase et cet appareil.")) {
-                // Remise à zéro complète des variables
                 teams = [];
                 currentRound = 1;
                 tournamentActive = false;
                 matches = [];
                 
-                // Nettoyage des formulaires de saisie
                 document.getElementById('new-team-name').value = '';
                 if(document.getElementById('bulk-teams-input')) document.getElementById('bulk-teams-input').value = '';
                 if(document.getElementById('excel-file-input')) document.getElementById('excel-file-input').value = '';
                 
-                // Forçage du nettoyage de la sauvegarde locale
                 localStorage.removeItem('volley_tournament_state');
-                
-                // Envoi immédiat à Firebase pour débloquer tout le monde
                 saveState();
+                updateUI(); 
                 alert("Le système a été entièrement réinitialisé ! Vous pouvez ajouter vos équipes.");
             }
         }
 
-        // --- AJOUT D'ÉQUIPE CORRIGÉ ET PROTECTION AMÉLIORÉE ---
+        // --- AJOUT D'ÉQUIPE CORRIGÉ ---
         function addTeam() {
             const input = document.getElementById('new-team-name');
             const name = input.value.trim();
-            if (name) {
-                if (teams.includes(name)) {
-                    alert("Cette équipe existe déjà !");
+            if (!name) return;
+
+            if (tournamentActive) {
+                if (confirm("Le tournoi est actif. Voulez-vous déverrouiller pour ajouter cette équipe ? (Cela videra les matchs de la ronde actuelle)")) {
+                    tournamentActive = false;
+                    matches = []; 
+                } else {
                     return;
                 }
-                
-                // S'il n'y a pas de match en cours de jeu réel, on s'assure que l'état n'est pas verrouillé
-                if (matches.length === 0) {
-                    tournamentActive = false;
-                }
-                
-                // Sécurité absolue : si le tournoi est resté bloqué à "true" alors que l'admin tente d'ajouter manuellement, on déverrouille
-                if (tournamentActive && confirm("Le tournoi semble actif en arrière-plan. Voulez-vous le déverrouiller pour ajouter cette équipe ?")) {
-                    tournamentActive = false;
-                    matches = []; // Nettoie les anciens matchs fantômes qui bloquent
-                } else if (tournamentActive) {
-                    return; // Refuse l'ajout si l'admin annule le déverrouillage
-                }
-
-                teams.push(name);
-                input.value = '';
-                saveState();
             }
+
+            if (teams.includes(name)) {
+                alert("Cette équipe existe déjà !");
+                return;
+            }
+
+            teams.push(name);
+            input.value = '';
+            saveState();
         }
 
         function removeTeam(name) {
@@ -575,6 +567,7 @@
         function importBulkTeams() {
             if (tournamentActive && !confirm("Déverrouiller le mode configuration pour importer la liste ?")) return;
             tournamentActive = false;
+            matches = [];
             
             const text = document.getElementById('bulk-teams-input').value;
             const lines = text.split('\n');
@@ -589,6 +582,7 @@
         function importExcelFile(event) {
             if (tournamentActive && !confirm("Déverrouiller le mode configuration pour importer le fichier ?")) return;
             tournamentActive = false;
+            matches = [];
 
             const file = event.target.files[0];
             if (!file) return;
@@ -735,24 +729,14 @@
             }
 
             const launchBtn = document.getElementById('launch-btn');
-            const addBtn = document.getElementById('add-team-btn');
-            const inputField = document.getElementById('new-team-name');
 
             if (tournamentActive) {
-                // Mode verrouillé pendant le tournoi
-                if(addBtn) addBtn.disabled = true;
-                if(inputField) inputField.disabled = true;
-                
                 launchBtn.disabled = true;
                 launchBtn.className = "bg-emerald-100 text-emerald-700 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed w-full sm:w-auto";
                 launchBtn.innerHTML = `<i class="fa-solid fa-lock mr-2"></i> Tournoi en cours`;
                 document.getElementById('current-round-label').innerText = `Ronde ${currentRound}`;
                 renderCourts();
             } else {
-                // Mode libre configuration
-                if(addBtn) addBtn.disabled = false;
-                if(inputField) inputField.disabled = false;
-
                 launchBtn.disabled = teams.length < 2;
                 launchBtn.className = teams.length >= 2 
                     ? "bg-grass-600 hover:bg-grass-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl cursor-pointer w-full sm:w-auto shadow-md"
