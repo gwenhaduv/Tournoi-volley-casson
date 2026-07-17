@@ -279,7 +279,7 @@
             </div>
 
             <div class="space-y-6">
-                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+                <div class="bg-white rounded-2xl shadow-md border border-gray-150 p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                             <i class="fa-solid fa-ranking-star text-grass-600"></i> Classement en Direct
@@ -1132,8 +1132,9 @@
                 }
             });
 
+            // CORRIGÉ : Syntaxe propre pour le tri
             list.sort((a, b) => {
-                if (b.points !== a.points;
+                if (b.points !== a.points) return b.points - a.points;
                 if (b.wins !== a.wins) return b.wins - a.wins;
                 if (b.diff !== a.diff) return b.diff - a.diff;
                 return a.name.localeCompare(b.name);
