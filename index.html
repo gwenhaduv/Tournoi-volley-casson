@@ -63,7 +63,7 @@
                 <div class="text-center md:text-left">
                     <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full">CASSON • 22 MAI 2027</span>
                     <h1 class="text-3xl md:text-5xl font-extrabold mt-3 tracking-tight flex items-center justify-center md:justify-start gap-3">
-                        <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi de volley 4x4 sur herbe
+                        <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi Volley Herbe
                     </h1>
                     <p class="text-sm md:text-base text-emerald-100/80 mt-1">6 Terrains Disponibles • Début 10h30 | Fin 18h00</p>
                 </div>
@@ -73,7 +73,7 @@
                         <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
                     </button>
                     <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play text-white"></i> Écran TV Défilant<i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
+                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant (1 par 1) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
                 </div>
             </div>
@@ -89,11 +89,14 @@
                             <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                                 <i class="fa-solid fa-users text-grass-600"></i> 1. Enregistrement des Équipes
                             </h2>
-                            <p class="text-xs text-gray-500">Ajoutez vos équipes à l'unité, collez une colonne Excel, ou chargez un fichier.</p>
+                            <p class="text-xs text-gray-500">Ajoutez vos équipes. Si les boutons sont bloqués, cliquez sur "Réinitialiser".</p>
                         </div>
-                        <div class="flex items-center gap-2 self-stretch sm:self-auto">
+                        <div class="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
                             <span id="team-count-badge" class="bg-gray-100 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap">0 Équipe(s)</span>
-                            <button onclick="()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                            <button onclick="forceResetTournament()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> Réinitialiser
+                            </button>
+                            <button onclick="clearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
                                 <i class="fa-solid fa-trash-can"></i> Tout effacer
                             </button>
                         </div>
@@ -345,14 +348,13 @@
         // 🛠 CONFIGURATION FIREBASE INTEGRÉE
         // ==========================================
         const firebaseConfig = {
-              apiKey: "AIzaSyC0jCmtlxUZPNquETfFTZK09q4-sAz9NHE",
-              authDomain: "tournoi-volley-casson-2027.firebaseapp.com",
-              databaseURL: "https://tournoi-volley-casson-2027-default-rtdb.europe-west1.firebasedatabase.app",
-              projectId: "tournoi-volley-casson-2027",
-              storageBucket: "tournoi-volley-casson-2027.firebasestorage.app",
-              messagingSenderId: "1006967763633",
-              appId: "1:1006967763633:web:6725f4aefadf81c81fa890",
-              measurementId: "G-3WR91F9B6F"
+            apiKey: "AIzaSyC0jCmtlxUZPNquETfFTZK09q4-sAz9NHE",
+            authDomain: "tournoi-volley-casson-2027.firebaseapp.com",
+            databaseURL: "https://tournoi-volley-casson-2027-default-rtdb.firebaseio.com",
+            projectId: "tournoi-volley-casson-2027",
+            storageBucket: "tournoi-volley-casson-2027.firebasestorage.app",
+            messagingSenderId: "1006967763633",
+            appId: "1:1006967763633:web:e7c50558f59284291fa890"
         };
 
         // Variable de contrôle Firebase actif
@@ -515,16 +517,29 @@
             }
         }
 
+        // --- CORRECTIONS DES FONCTIONS D'ENREGISTREMENT ---
+        function forceResetTournament() {
+            if (confirm("Voulez-vous stopper le tournoi en cours et revenir à la saisie des équipes ? (Les scores actuels seront effacés)")) {
+                tournamentActive = false;
+                currentRound = 1;
+                matches = [];
+                saveState();
+            }
+        }
+
         function addTeam() {
             const input = document.getElementById('new-team-name');
             const name = input.value.trim();
-            if (name && !teams.includes(name)) {
+            if (name) {
+                if (teams.includes(name)) {
+                    alert("Cette équipe existe déjà !");
+                    return;
+                }
+                if (matches.length === 0) {
+                    tournamentActive = false;
+                }
                 teams.push(name);
                 input.value = '';
-                // Si le tournoi était actif mais qu'on ajoute une équipe, on permet la mise à jour
-                if (tournamentActive && matches.length === 0) {
-                    tournamentActive = false; 
-                }
                 saveState();
             }
         }
@@ -543,7 +558,7 @@
                 if (name && !teams.includes(name)) teams.push(name);
             });
             document.getElementById('bulk-teams-input').value = '';
-            if (tournamentActive && matches.length === 0) tournamentActive = false;
+            if (matches.length === 0) tournamentActive = false;
             saveState();
         }
 
@@ -562,24 +577,23 @@
                         if (name && !teams.includes(name)) teams.push(name);
                     }
                 });
-                if (tournamentActive && matches.length === 0) tournamentActive = false;
+                if (matches.length === 0) tournamentActive = false;
                 saveState();
             };
             reader.readAsBinaryString(file);
         }
 
         function clearAll() {
-            if (confirm("Effacer toutes les données et réinitialiser le tournoi ?")) {
+            if (confirm("Effacer TOUTES les équipes et réinitialiser le tournoi ?")) {
                 teams = [];
                 currentRound = 1;
                 tournamentActive = false;
                 matches = [];
-        
-                // On force le nettoyage des champs de saisie au cas où
+                
                 document.getElementById('new-team-name').value = '';
-                document.getElementById('bulk-teams-input').value = '';
-                document.getElementById('excel-file-input').value = '';
-        
+                if(document.getElementById('bulk-teams-input')) document.getElementById('bulk-teams-input').value = '';
+                if(document.getElementById('excel-file-input')) document.getElementById('excel-file-input').value = '';
+                
                 saveState();
             }
         }
@@ -600,7 +614,6 @@
 
         function generateRound() {
             let pool = [...teams];
-            // Brassage aléatoire (Fisher-Yates)
             for (let i = pool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -609,7 +622,6 @@
             let court = 1;
             const newMatches = [];
 
-            // Distribution sur les 6 terrains max
             while (pool.length >= 2 && court <= 6) {
                 const t1 = pool.shift();
                 const t2 = pool.shift();
@@ -623,7 +635,6 @@
                 court++;
             }
 
-            // Équipes restantes en attente ou exemptes
             while (pool.length > 0) {
                 const t = pool.shift();
                 newMatches.push({
@@ -699,13 +710,11 @@
         // --- RENDERING MANAGEMENT ---
         function updateUI() {
             document.getElementById('team-count-badge').innerText = `${teams.length} Équipe(s)`;
-    
-            // Si la liste est vide, on s'assure que le tournoi est considéré comme non lancé
+            
             if (teams.length === 0) {
                 tournamentActive = false;
             }
 
-            // Rendu des badges d'équipes
             const container = document.getElementById('teams-container');
             if (teams.length === 0) {
                 container.innerHTML = `<p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>`;
@@ -728,12 +737,11 @@
             } else {
                 launchBtn.disabled = teams.length < 2;
                 launchBtn.className = teams.length >= 2 
-                    ? "bg-grass-600 hover:bg-grass-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl cursor-pointer w-full sm:w-auto shadow"
+                    ? "bg-grass-600 hover:bg-grass-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl cursor-pointer w-full sm:w-auto shadow-md"
                     : "bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed w-full sm:w-auto";
                 launchBtn.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi`;
                 document.getElementById('current-round-label').innerText = `Ronde -`;
-        
-                // Si le tournoi n'est pas actif, on remet l'affichage des terrains à zéro
+                
                 document.getElementById('courts-grid').innerHTML = `
                     <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
                         <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
@@ -780,7 +788,6 @@
             }
             grid.innerHTML = html;
 
-            // Vérification si tous les matchs actifs de la ronde sont terminés
             const nextBtn = document.getElementById('next-round-btn');
             const allDone = activePlaying.length > 0 && activePlaying.every(m => m.completed);
             if (allDone) {
@@ -922,17 +929,15 @@
                     const m = slide.data;
                     container.innerHTML = `
                         <div class="text-center flex flex-col justify-between h-full space-y-8">
-                            <!-- Fenêtre et numéro de terrain stylisé en jaune ambre vif -->
                             <div class="inline-block mx-auto bg-amber-400 text-gray-950 font-black text-2xl sm:text-4xl px-8 py-3 rounded-2xl shadow-lg tracking-wider uppercase">
                                  TERRAIN ${m.court}
                             </div>
                             
-                            <!-- Affichage XXL des Équipes et Scores -->
                             <div class="grid grid-cols-1 md:grid-cols-7 items-center gap-4 py-6">
                                 <div class="md:col-span-3 text-2xl sm:text-4xl font-extrabold truncate text-white tracking-tight px-2">${m.t1}</div>
                                 <div class="md:col-span-1 text-center font-black text-4xl sm:text-6xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
                                     ${m.s1 !== "" ? m.s1 : '-'}
-                                }</div>
+                                </div>
                                 <div class="md:col-span-3 text-2xl sm:text-4xl font-extrabold truncate text-white tracking-tight px-2">${m.t2}</div>
                             </div>
 
@@ -952,7 +957,6 @@
                         </div>`;
                 }
 
-                // Génération des puces/bullets de navigation basse
                 if (bulletsContainer) {
                     bulletsContainer.innerHTML = tvSlides.map((_, i) => `
                         <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
