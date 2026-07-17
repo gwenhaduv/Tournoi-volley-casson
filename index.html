@@ -516,12 +516,15 @@
         }
 
         function addTeam() {
-            if (tournamentActive) return alert("Le tournoi a démarré.");
             const input = document.getElementById('new-team-name');
             const name = input.value.trim();
             if (name && !teams.includes(name)) {
                 teams.push(name);
                 input.value = '';
+                // Si le tournoi était actif mais qu'on ajoute une équipe, on permet la mise à jour
+                if (tournamentActive && matches.length === 0) {
+                    tournamentActive = false; 
+                }
                 saveState();
             }
         }
@@ -533,7 +536,6 @@
         }
 
         function importBulkTeams() {
-            if (tournamentActive) return;
             const text = document.getElementById('bulk-teams-input').value;
             const lines = text.split('\n');
             lines.forEach(line => {
@@ -541,11 +543,11 @@
                 if (name && !teams.includes(name)) teams.push(name);
             });
             document.getElementById('bulk-teams-input').value = '';
+            if (tournamentActive && matches.length === 0) tournamentActive = false;
             saveState();
         }
 
         function importExcelFile(event) {
-            if (tournamentActive) return;
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -560,6 +562,7 @@
                         if (name && !teams.includes(name)) teams.push(name);
                     }
                 });
+                if (tournamentActive && matches.length === 0) tournamentActive = false;
                 saveState();
             };
             reader.readAsBinaryString(file);
