@@ -93,7 +93,7 @@
                         </div>
                         <div class="flex items-center gap-2 self-stretch sm:self-auto">
                             <span id="team-count-badge" class="bg-gray-100 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap">0 Équipe(s)</span>
-                            <button onclick="clearAll()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                            <button onclick="()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
                                 <i class="fa-solid fa-trash-can"></i> Tout effacer
                             </button>
                         </div>
@@ -569,11 +569,17 @@
         }
 
         function clearAll() {
-            if (confirm("Effacer toutes les données ?")) {
+            if (confirm("Effacer toutes les données et réinitialiser le tournoi ?")) {
                 teams = [];
                 currentRound = 1;
                 tournamentActive = false;
                 matches = [];
+        
+                // On force le nettoyage des champs de saisie au cas où
+                document.getElementById('new-team-name').value = '';
+                document.getElementById('bulk-teams-input').value = '';
+                document.getElementById('excel-file-input').value = '';
+        
                 saveState();
             }
         }
@@ -693,8 +699,13 @@
         // --- RENDERING MANAGEMENT ---
         function updateUI() {
             document.getElementById('team-count-badge').innerText = `${teams.length} Équipe(s)`;
-            
-            // Render tags
+    
+            // Si la liste est vide, on s'assure que le tournoi est considéré comme non lancé
+            if (teams.length === 0) {
+                tournamentActive = false;
+            }
+
+            // Rendu des badges d'équipes
             const container = document.getElementById('teams-container');
             if (teams.length === 0) {
                 container.innerHTML = `<p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>`;
@@ -721,6 +732,13 @@
                     : "bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed w-full sm:w-auto";
                 launchBtn.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi`;
                 document.getElementById('current-round-label').innerText = `Ronde -`;
+        
+                // Si le tournoi n'est pas actif, on remet l'affichage des terrains à zéro
+                document.getElementById('courts-grid').innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
+                        <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
+                        <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
+                    </div>`;
             }
 
             renderStandingsTable('standings-body');
