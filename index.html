@@ -10,13 +10,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS pour lire les fichiers Excel (.xlsx) directement en JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Firebase App et Database SDK v9 (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght=300;400;500;600;700;800&display=swap');
         body {
             font-family: 'Outfit', sans-serif;
             background-color: #f4f7f5;
         }
-        /* Transition douce pour le mode TV */
         .fade-slide {
             transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
         }
@@ -44,6 +48,11 @@
 </head>
 <body class="text-gray-800 min-h-screen pb-12">
 
+    <!-- CONFIGURATION PANEL -->
+    <div id="firebase-alert" class="bg-amber-500 text-white text-center py-2 px-4 text-xs font-bold shadow-md hidden">
+        <i class="fa-solid fa-triangle-exclamation mr-2"></i> Mode déconnecté (Local). Pour activer le partage en direct, configurez vos clés Firebase dans le code source.
+    </div>
+
     <!-- ========================================== -->
     <!-- ÉCRAN 1 : INTERFACE DE GESTION COMPLETE    -->
     <!-- ========================================== -->
@@ -59,7 +68,6 @@
                     <p class="text-sm md:text-base text-emerald-100/80 mt-1">6 Terrains Disponibles • Début 10h30 | Fin 18h00</p>
                 </div>
                 
-                <!-- Navigation vers les affichages publics (Nouvel onglet) -->
                 <div class="flex flex-col items-stretch sm:items-center gap-2">
                     <button onclick="openInNewTab('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                         <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
@@ -194,7 +202,7 @@
                 </section>
             </div>
 
-            <!-- Column 3: Standings & Timeline -->
+            <!-- Column 3: Standings -->
             <div class="space-y-8">
                 <!-- Live Dynamic Standings -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
@@ -300,7 +308,6 @@
     <!-- ÉCRAN 3 : NOUVEAU CAROUSEL TV DÉFILANT    -->
     <!-- ========================================== -->
     <div id="view-tv" class="hidden bg-gray-950 min-h-screen text-white flex flex-col justify-between p-6">
-        <!-- Header TV -->
         <div class="flex justify-between items-center border-b border-gray-800 pb-4">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-volleyball text-grass-500 text-3xl animate-spin" style="animation-duration: 10s;"></i>
@@ -317,20 +324,16 @@
             </div>
         </div>
 
-        <!-- Zone du Slide actif -->
         <div class="flex-1 flex items-center justify-center py-10">
             <div id="tv-carousel-container" class="w-full max-w-4xl bg-gray-900 border border-gray-800 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden transition-all duration-500 transform scale-100">
-                <!-- Rempli en JS par un seul terrain géant -->
             </div>
         </div>
 
-        <!-- Indicateur de progression / Footer TV -->
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-900 pt-4 text-xs text-gray-500">
             <div class="flex items-center gap-2">
                 <span class="inline-block w-2.5 h-2.5 rounded-full bg-grass-500 animate-ping"></span>
                 <span>Changement automatique toutes les 5 secondes</span>
             </div>
-            <!-- Petites puces pour savoir où on en est -->
             <div id="tv-bullets" class="flex gap-1.5"></div>
         </div>
     </div>
@@ -338,42 +341,75 @@
 
     <!-- App Logic Script -->
     <script>
+        // ==========================================
+        // 🛠 CONFIGURATION FIREBASE INTEGRÉE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyC0jCmtlxUZPNquETfFTZK09q4-sAz9NHE",
+            authDomain: "tournoi-volley-casson-2027.firebaseapp.com",
+            databaseURL: "https://tournoi-volley-casson-2027-default-rtdb.firebaseio.com",
+            projectId: "tournoi-volley-casson-2027",
+            storageBucket: "tournoi-volley-casson-2027.firebasestorage.app",
+            messagingSenderId: "1006967763633",
+            appId: "1:1006967763633:web:e7c50558f59284291fa890"
+        };
+
+        // Variable de contrôle Firebase actif
+        let isFirebaseActive = false;
+        let dbRef = null;
+
+        // Initialisation de Firebase sécurisée
+        if (firebaseConfig.apiKey !== "VOTRE_API_KEY") {
+            firebase.initializeApp(firebaseConfig);
+            dbRef = firebase.database().ref('tournament_shared_state');
+            isFirebaseActive = true;
+        } else {
+            document.getElementById('firebase-alert').classList.remove('hidden');
+        }
+
         let teams = [];
         let currentRound = 1;
         let tournamentActive = false;
         let matches = [];
 
-        // Synchronisation inter-onglets automatique via localStorage
-        const CHANNEL_NAME = 'volley_tournament_state';
-        
-        function saveStateToStorage() {
-            const state = {
-                teams,
-                currentRound,
-                tournamentActive,
-                matches
-            };
-            localStorage.setItem(CHANNEL_NAME, JSON.stringify(state));
-        }
-
-        function loadStateFromStorage() {
-            const saved = localStorage.getItem(CHANNEL_NAME);
-            if (saved) {
-                const state = JSON.parse(saved);
-                teams = state.teams || [];
-                currentRound = state.currentRound || 1;
-                tournamentActive = state.tournamentActive || false;
-                matches = state.matches || [];
-            }
-        }
-
-        // Ecouter les changements faits sur l'autre onglet (Admin -> Public ou TV)
-        window.addEventListener('storage', (e) => {
-            if (e.key === CHANNEL_NAME) {
-                loadStateFromStorage();
+        // Sauvegarde centralisée (Firebase ou LocalStorage)
+        function saveState() {
+            const state = { teams, currentRound, tournamentActive, matches };
+            if (isFirebaseActive) {
+                dbRef.set(state);
+            } else {
+                localStorage.setItem('volley_tournament_state', JSON.stringify(state));
                 refreshActiveView();
             }
-        });
+        }
+
+        // Écoute des changements en temps réel
+        if (isFirebaseActive) {
+            dbRef.on('value', (snapshot) => {
+                const state = snapshot.val();
+                if (state) {
+                    teams = state.teams || [];
+                    currentRound = state.currentRound || 1;
+                    tournamentActive = state.tournamentActive || false;
+                    matches = state.matches || [];
+                    refreshActiveView();
+                }
+            });
+        } else {
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'volley_tournament_state') {
+                    const saved = localStorage.getItem('volley_tournament_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        teams = state.teams || [];
+                        currentRound = state.currentRound || 1;
+                        tournamentActive = state.tournamentActive || false;
+                        matches = state.matches || [];
+                        refreshActiveView();
+                    }
+                }
+            });
+        }
 
         function refreshActiveView() {
             const view = document.getElementById('view-public').className !== 'hidden' ? 'results' : 
@@ -393,7 +429,6 @@
             }
         }
 
-        // Gestion du carrousel TV
         let tvInterval = null;
         let tvSlides = []; 
         let currentTvIndex = 0;
@@ -405,15 +440,13 @@
             "La Smacherie", "Passe Décisive", "Volley-au-Vent"
         ];
 
-        // --- OUVERTURE DANS UN NOUVEL ONGLET ---
         function openInNewTab(view) {
-            saveStateToStorage();
+            saveState();
             const cleanUrl = window.location.origin + window.location.pathname;
             const targetUrl = `${cleanUrl}?view=${view}`;
             window.open(targetUrl, '_blank');
         }
 
-        // --- NAVIGATION DES VUES INTERNES ---
         function navigateToView(view) {
             if (tvInterval) {
                 clearInterval(tvInterval);
@@ -440,9 +473,17 @@
             }
         }
 
-        // Chargement initial (et routage URL)
         window.addEventListener('DOMContentLoaded', () => {
-            loadStateFromStorage();
+            if (!isFirebaseActive) {
+                const saved = localStorage.getItem('volley_tournament_state');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    teams = state.teams || [];
+                    currentRound = state.currentRound || 1;
+                    tournamentActive = state.tournamentActive || false;
+                    matches = state.matches || [];
+                }
+            }
             
             const params = new URLSearchParams(window.location.search);
             const viewParam = params.get('view');
@@ -454,7 +495,6 @@
                 navigateToView('tv');
                 document.getElementById('tv-back-btn').className = 'hidden';
             } else {
-                // Mode administration normal
                 if (tournamentActive) {
                     document.getElementById('current-round-label').innerText = `Ronde ${currentRound}`;
                     renderCourts();
@@ -463,7 +503,6 @@
             }
         });
 
-        // --- CAROUSEL TV EN DIRECT ---
         function startTvCarousel() {
             currentTvIndex = 0;
             buildTvSlides();
@@ -497,10 +536,10 @@
             }
         }
 
-        // --- ENREGISTREMENT ET AFFICHAGE ---
         function renderTvSlide() {
             const container = document.getElementById('tv-carousel-container');
             const bulletsContainer = document.getElementById('tv-bullets');
+            if(!container) return;
             
             document.getElementById('tv-round-label').innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
 
@@ -532,23 +571,19 @@
                                 <span class="bg-grass-600/20 text-grass-300 border border-grass-500/30 font-black text-xl px-4 py-1 rounded-xl">TERRAIN ${m.court}</span>
                                 ${statusBadge}
                             </div>
-
                             <div class="flex flex-col sm:flex-row items-center justify-between gap-6 py-6">
                                 <div class="flex-1 text-center sm:text-left min-w-0 w-full">
                                     <h3 class="text-2xl sm:text-4xl font-extrabold text-white truncate drop-shadow-md" title="${m.team1}">${m.team1}</h3>
                                 </div>
-
                                 <div class="bg-gray-950 border border-gray-800 px-8 py-4 rounded-3xl font-black text-5xl sm:text-6xl flex items-center gap-4 tracking-wider text-grass-400 shadow-inner">
                                     <span>${m.played ? m.score1 : '-'}</span>
                                     <span class="text-gray-700 text-3xl">-</span>
                                     <span>${m.played ? m.score2 : '-'}</span>
                                 </div>
-
                                 <div class="flex-1 text-center sm:text-right min-w-0 w-full">
                                     <h3 class="text-2xl sm:text-4xl font-extrabold text-white truncate drop-shadow-md" title="${m.team2}">${m.team2}</h3>
                                 </div>
                             </div>
-
                             <div class="bg-amber-50/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-center gap-3">
                                 <i class="fa-solid fa-whistle text-amber-500 text-2xl"></i>
                                 <div class="text-left">
@@ -566,9 +601,7 @@
                             <div class="border-b border-gray-800 pb-4">
                                 <span class="bg-blue-600/20 text-blue-300 border border-blue-500/30 font-black text-sm px-4 py-1.5 rounded-xl uppercase tracking-widest">Équipes Exemptes & Arbitres au Repos</span>
                             </div>
-
                             <p class="text-sm text-gray-400">Les équipes suivantes ne jouent pas cette ronde. Elles sont prioritaires pour arbitrer sur les terrains.</p>
-
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                                 ${idleList.map(m => {
                                     if (m.isBye) {
@@ -595,17 +628,17 @@
                         </div>
                     `;
                 }
-
                 container.style.opacity = '1';
                 container.style.transform = 'scale(1)';
             }, 300);
 
-            bulletsContainer.innerHTML = tvSlides.map((_, idx) => `
-                <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === currentTvIndex ? 'bg-grass-500 w-6' : 'bg-gray-800'}"></span>
-            `).join('');
+            if(bulletsContainer) {
+                bulletsContainer.innerHTML = tvSlides.map((_, idx) => `
+                    <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === currentTvIndex ? 'bg-grass-500 w-6' : 'bg-gray-800'}"></span>
+                `).join('');
+            }
         }
 
-        // --- GESTION ADMINISTRATIVE ---
         function switchTab(tabId) {
             document.getElementById('tab-single').className = 'hidden';
             document.getElementById('tab-bulk').className = 'hidden';
@@ -642,7 +675,7 @@
             textarea.value = '';
             alert(`${addedCount} équipe(s) ajoutée(s) !`);
             switchTab('single');
-            saveStateToStorage();
+            saveState();
             updateUI();
         }
 
@@ -674,7 +707,7 @@
                     alert(`${addedCount} équipe(s) importée(s) !`);
                     event.target.value = '';
                     switchTab('single');
-                    saveStateToStorage();
+                    saveState();
                     updateUI();
                 } catch (error) {
                     alert("Erreur lors de la lecture du fichier.");
@@ -685,6 +718,7 @@
 
         function updateUI() {
             const badge = document.getElementById('team-count-badge');
+            if(!badge) return;
             badge.innerText = `${teams.length} Équipe(s)`;
             
             if (teams.length >= 2) {
@@ -709,7 +743,6 @@
                 `).join('');
             }
 
-            // Gestion des blocages des inputs d'équipes si le tournoi a commencé
             const inputsContainer = document.getElementById('new-team-name');
             const addBtn = document.getElementById('add-team-btn');
             const genBtn = document.getElementById('gen-team-btn');
@@ -774,14 +807,14 @@
             }
             teams.push(name);
             input.value = "";
-            saveStateToStorage();
+            saveState();
             updateUI();
         }
 
         function removeTeam(index) {
             if (tournamentActive) return;
             teams.splice(index, 1);
-            saveStateToStorage();
+            saveState();
             updateUI();
         }
 
@@ -803,10 +836,11 @@
             currentRound = 1;
             document.getElementById('current-round-label').innerText = `Ronde 1`;
             generateSwissRound();
-            saveStateToStorage();
+            saveState();
             updateUI();
         }
 
+        // Nettoyage complet
         function clearAll() {
             if (confirm("Êtes-vous sûr de vouloir tout effacer et réinitialiser le tournoi ?")) {
                 teams = [];
@@ -815,8 +849,8 @@
                 matches = [];
                 document.getElementById('current-round-label').innerText = `Ronde -`;
                 const grid = document.getElementById('courts-grid');
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl"><p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p></div>`;
-                saveStateToStorage();
+                if(grid) grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl"><p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p></div>`;
+                saveState();
                 updateUI();
             }
         }
@@ -926,6 +960,7 @@
 
         function renderCourts() {
             const grid = document.getElementById('courts-grid');
+            if(!grid) return;
             const currentMatches = matches.filter(m => m.round === currentRound);
 
             if (currentMatches.length === 0) {
@@ -1000,6 +1035,7 @@
 
         function renderPublicUI() {
             const grid = document.getElementById('public-courts-grid');
+            if(!grid) return;
             document.getElementById('public-round-label').innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
             
             const currentMatches = matches.filter(m => m.round === currentRound);
@@ -1010,7 +1046,6 @@
             }
 
             const playingMatches = currentMatches.filter(m => m.court > 0);
-            const restingMatches = currentMatches.filter(m => m.isResting || m.isBye);
 
             grid.innerHTML = playingMatches.map(m => {
                 const cardStyle = m.played ? "border-green-200 bg-green-50/20" : "border-gray-200 bg-white shadow-sm";
@@ -1039,15 +1074,17 @@
             }).join('');
 
             const tbodyPublic = document.getElementById('public-standings-body');
-            const sorted = getSortedStandingsList();
-            tbodyPublic.innerHTML = sorted.map((team, idx) => `
-                <tr class="hover:bg-grass-50/50">
-                    <td class="py-2 px-3 text-center font-bold text-gray-500 text-xs">${idx + 1}</td>
-                    <td class="py-2 px-2 font-bold text-gray-800">${team.name}</td>
-                    <td class="py-2 px-2 text-center text-grass-700 font-extrabold">${team.points}</td>
-                    <td class="py-2 px-2 text-center text-gray-400 text-xs">${team.played}</td>
-                </tr>
-            `).join('');
+            if(tbodyPublic) {
+                const sorted = getSortedStandingsList();
+                tbodyPublic.innerHTML = sorted.map((team, idx) => `
+                    <tr class="hover:bg-grass-50/50">
+                        <td class="py-2 px-3 text-center font-bold text-gray-500 text-xs">${idx + 1}</td>
+                        <td class="py-2 px-2 font-bold text-gray-800">${team.name}</td>
+                        <td class="py-2 px-2 text-center text-grass-700 font-extrabold">${team.points}</td>
+                        <td class="py-2 px-2 text-center text-gray-400 text-xs">${team.played}</td>
+                    </tr>
+                `).join('');
+            }
         }
 
         function saveScore(court, scoreKey, value) {
@@ -1058,13 +1095,10 @@
             if (matchIndex !== -1) {
                 matches[matchIndex][scoreKey] = intVal;
                 const m = matches[matchIndex];
-                if (m.score1 !== undefined && m.score2 !== undefined) {
+                if (m.score1 !== undefined && m.score2 !== undefined && m.score1 !== "" && m.score2 !== "") {
                     m.played = true;
                 }
-                
-                saveStateToStorage();
-                updateUI();
-                renderCourts();
+                saveState();
             }
         }
 
@@ -1099,7 +1133,7 @@
             });
 
             list.sort((a, b) => {
-                if (b.points !== a.points) return b.points - a.points;
+                if (b.points !== a.points;
                 if (b.wins !== a.wins) return b.wins - a.wins;
                 if (b.diff !== a.diff) return b.diff - a.diff;
                 return a.name.localeCompare(b.name);
@@ -1110,6 +1144,7 @@
 
         function renderStandings() {
             const tbody = document.getElementById('standings-body');
+            if(!tbody) return;
             const sorted = getSortedStandingsList();
 
             if (sorted.length === 0) {
@@ -1117,8 +1152,10 @@
                 return;
             }
 
+            const searchInput = document.getElementById('teamSearch');
+            const searchVal = searchInput ? searchInput.value.toLowerCase() : "";
+
             tbody.innerHTML = sorted.map((team, idx) => {
-                const searchVal = document.getElementById('teamSearch').value.toLowerCase();
                 const isMatch = team.name.toLowerCase().includes(searchVal);
                 const displayStyle = isMatch ? "" : "display: none;";
 
@@ -1141,8 +1178,7 @@
             currentRound++;
             document.getElementById('current-round-label').innerText = `Ronde ${currentRound}`;
             generateSwissRound();
-            saveStateToStorage();
-            updateUI();
+            saveState();
         }
     </script>
 </body>
