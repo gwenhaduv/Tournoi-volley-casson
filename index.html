@@ -59,13 +59,13 @@
                     <p class="text-sm md:text-base text-emerald-100/80 mt-1">6 Terrains Disponibles • Début 10h30 | Fin 18h00</p>
                 </div>
                 
-                <!-- Navigation vers les affichages publics -->
+                <!-- Navigation vers les affichages publics (Nouvel onglet) -->
                 <div class="flex flex-col items-stretch sm:items-center gap-2">
-                    <button onclick="navigateToView('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau)
+                    <button onclick="openInNewTab('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
                     </button>
-                    <button onclick="navigateToView('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant (1 par 1)
+                    <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant (1 par 1) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
                 </div>
             </div>
@@ -343,9 +343,53 @@
         let tournamentActive = false;
         let matches = [];
 
+        // Synchronisation inter-onglets automatique via localStorage
+        const CHANNEL_NAME = 'volley_tournament_state';
+        
+        function saveStateToStorage() {
+            const state = {
+                teams,
+                currentRound,
+                tournamentActive,
+                matches
+            };
+            localStorage.setItem(CHANNEL_NAME, JSON.stringify(state));
+        }
+
+        function loadStateFromStorage() {
+            const saved = localStorage.getItem(CHANNEL_NAME);
+            if (saved) {
+                const state = JSON.parse(saved);
+                teams = state.teams || [];
+                currentRound = state.currentRound || 1;
+                tournamentActive = state.tournamentActive || false;
+                matches = state.matches || [];
+            }
+        }
+
+        // Ecouter les changements faits sur l'autre onglet (Admin -> Public ou TV)
+        window.addEventListener('storage', (e) => {
+            if (e.key === CHANNEL_NAME) {
+                loadStateFromStorage();
+                
+                // Mettre à jour l'affichage selon la vue active
+                const view = document.getElementById('view-public').className !== 'hidden' ? 'results' : 
+                             (document.getElementById('view-tv').className !== 'hidden' ? 'tv' : 'admin');
+                
+                if (view === 'results') {
+                    renderPublicUI();
+                } else if (view === 'tv') {
+                    buildTvSlides();
+                    renderTvSlide();
+                } else {
+                    updateUI();
+                }
+            }
+        });
+
         // Gestion du carrousel TV
         let tvInterval = null;
-        let tvSlides = []; // Contient la liste des objets à afficher [{type: 'match', data: matchObj}, {type: 'idle', data: [...]}]
+        let tvSlides = []; 
         let currentTvIndex = 0;
 
         const sampleNames = [
@@ -355,9 +399,20 @@
             "La Smacherie", "Passe Décisive", "Volley-au-Vent"
         ];
 
-        // --- NAVIGATION DES VUES ---
+        // --- OUVERTURE DANS UN NOUVEL ONGLET ---
+        function openInNewTab(view) {
+            // Sauvegarder d'abord l'état pour que le nouvel onglet y ait accès
+            saveStateToStorage();
+            
+            // Récupérer le chemin actuel (ex: https://pseudo.github.io/projet/)
+            const cleanUrl = window.location.origin + window.location.pathname;
+            const targetUrl = `${cleanUrl}?view=${view}`;
+            
+            window.open(targetUrl, '_blank');
+        }
+
+        // --- NAVIGATION DES VUES INTERNES ---
         function navigateToView(view) {
-            // Arrêter le défilement TV si on quitte l'écran TV
             if (tvInterval) {
                 clearInterval(tvInterval);
                 tvInterval = null;
@@ -378,8 +433,10 @@
             }
         }
 
-        // Routage par URL (?view=results ou ?view=tv)
+        // Chargement initial (et routage URL)
         window.addEventListener('DOMContentLoaded', () => {
+            loadStateFromStorage();
+            
             const params = new URLSearchParams(window.location.search);
             const viewParam = params.get('view');
             if (viewParam === 'results') {
@@ -388,16 +445,17 @@
             } else if (viewParam === 'tv') {
                 navigateToView('tv');
                 document.getElementById('tv-back-btn').className = 'hidden';
+            } else {
+                updateUI();
             }
         });
 
-        // --- CAROUSEL TV EN DIRECT (Défilé automatique) ---
+        // --- CAROUSEL TV EN DIRECT ---
         function startTvCarousel() {
             currentTvIndex = 0;
             buildTvSlides();
             renderTvSlide();
 
-            // Lancement du timer de 5 secondes
             tvInterval = setInterval(() => {
                 if (tvSlides.length > 1) {
                     currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
@@ -411,18 +469,15 @@
             const currentMatches = matches.filter(m => m.round === currentRound);
             
             if (!tournamentActive || currentMatches.length === 0) {
-                // Pas de match en cours
                 tvSlides.push({ type: 'empty' });
                 return;
             }
 
-            // 1. On crée un slide pour chaque terrain actif
             const playingMatches = currentMatches.filter(m => m.court > 0);
             playingMatches.forEach(m => {
                 tvSlides.push({ type: 'match', data: m });
             });
 
-            // 2. On crée un slide global pour les équipes exemptes ou au repos
             const restingMatches = currentMatches.filter(m => m.isResting || m.isBye);
             if (restingMatches.length > 0) {
                 tvSlides.push({ type: 'idle', data: restingMatches });
@@ -438,7 +493,6 @@
             if (tvSlides.length === 0) return;
             const slide = tvSlides[currentTvIndex];
 
-            // Animation de fondu rapide
             container.style.opacity = '0';
             container.style.transform = 'scale(0.97)';
 
@@ -465,13 +519,11 @@
                                 ${statusBadge}
                             </div>
 
-                            <!-- Match d'équipes en géant -->
                             <div class="flex flex-col sm:flex-row items-center justify-between gap-6 py-6">
                                 <div class="flex-1 text-center sm:text-left min-w-0 w-full">
                                     <h3 class="text-2xl sm:text-4xl font-extrabold text-white truncate drop-shadow-md" title="${m.team1}">${m.team1}</h3>
                                 </div>
 
-                                <!-- Bloc Score -->
                                 <div class="bg-gray-950 border border-gray-800 px-8 py-4 rounded-3xl font-black text-5xl sm:text-6xl flex items-center gap-4 tracking-wider text-grass-400 shadow-inner">
                                     <span>${m.played ? m.score1 : '-'}</span>
                                     <span class="text-gray-700 text-3xl">-</span>
@@ -483,7 +535,6 @@
                                 </div>
                             </div>
 
-                            <!-- Bloc Arbitre en bas -->
                             <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-center gap-3">
                                 <i class="fa-solid fa-whistle text-amber-500 text-2xl"></i>
                                 <div class="text-left">
@@ -531,19 +582,16 @@
                     `;
                 }
 
-                // Ré-affichage progressif de la carte
                 container.style.opacity = '1';
                 container.style.transform = 'scale(1)';
             }, 300);
 
-            // Mise à jour des puces indicatrices en bas
             bulletsContainer.innerHTML = tvSlides.map((_, idx) => `
                 <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === currentTvIndex ? 'bg-grass-500 w-6' : 'bg-gray-800'}"></span>
             `).join('');
         }
 
-
-        // --- CODE IDENTIQUE AUX SESSIONS PRÉCÉDENTES POUR LA GESTION ---
+        // --- GESTION ADMINISTRATIVE ---
         function switchTab(tabId) {
             document.getElementById('tab-single').className = 'hidden';
             document.getElementById('tab-bulk').className = 'hidden';
@@ -580,6 +628,7 @@
             textarea.value = '';
             alert(`${addedCount} équipe(s) ajoutée(s) !`);
             switchTab('single');
+            saveStateToStorage();
             updateUI();
         }
 
@@ -611,6 +660,7 @@
                     alert(`${addedCount} équipe(s) importée(s) !`);
                     event.target.value = '';
                     switchTab('single');
+                    saveStateToStorage();
                     updateUI();
                 } catch (error) {
                     alert("Erreur lors de la lecture du fichier.");
@@ -680,12 +730,14 @@
             }
             teams.push(name);
             input.value = "";
+            saveStateToStorage();
             updateUI();
         }
 
         function removeTeam(index) {
             if (tournamentActive) return;
             teams.splice(index, 1);
+            saveStateToStorage();
             updateUI();
         }
 
@@ -707,6 +759,7 @@
             currentRound = 1;
             document.getElementById('current-round-label').innerText = `Ronde 1`;
             generateSwissRound();
+            saveStateToStorage();
             updateUI();
         }
 
@@ -719,6 +772,7 @@
                 document.getElementById('current-round-label').innerText = `Ronde -`;
                 const grid = document.getElementById('courts-grid');
                 grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl"><p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p></div>`;
+                saveStateToStorage();
                 updateUI();
             }
         }
@@ -961,6 +1015,7 @@
                 matches[matchIndex][scoreKey] = intVal;
                 matches[matchIndex].played = true; 
                 
+                saveStateToStorage();
                 updateUI();
                 renderCourts();
             }
@@ -1039,10 +1094,9 @@
             currentRound++;
             document.getElementById('current-round-label').innerText = `Ronde ${currentRound}`;
             generateSwissRound();
+            saveStateToStorage();
             updateUI();
         }
-
-        updateUI();
     </script>
 </body>
 </html>
