@@ -407,29 +407,34 @@
                         if (state.matches) {
                             matches = Array.isArray(state.matches) ? state.matches.filter(Boolean) : Object.values(state.matches);
                         } else { matches = []; }
-
+        
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         courtsCount = state.courtsCount || 1;
-                    } else {
-                        teams = []; currentRound = 1; tournamentActive = false; matches = []; courtsCount = 1;
                     }
-
+        
                     const inputElement = document.getElementById('courts-count-input');
                     if (inputElement) {
                         inputElement.value = courtsCount;
                         inputElement.disabled = tournamentActive;
                     }
-
-                    updateUI();
+        
+                    // --- CORRECTIF DE SYNCHRONISATION ---
+                    // On met à jour les classements et l'écran public
                     renderPublicUI();
+                    renderStandingsTable('standings-body');
                     buildTvSlides();
                     renderTvSlide();
+        
+                    // On ne reconstruit les terrains QUE si l'utilisateur n'est pas en train de taper dedans
+                    if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
+                        updateUI(); 
+                    }
                 } catch (error) {
-                    console.error("Erreur critique Firebase :", error);
+                    console.error("Erreur de synchronisation Firebase :", error);
                 }
             });
-        }
+        }       
 
         function refreshActiveView() {
             updateUI();
@@ -641,16 +646,28 @@
         function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Si l'utilisateur efface la case, on repasse la valeur à null
+                // Mise à jour locale immédiate
                 match[field] = value === "" ? null : parseInt(value, 10);
                 
-                // Validation instantanée : si les deux scores sont saisis, le match est comptabilisé
                 if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
                     match.played = true;
                 } else {
-                    match.played = false; // Permet de repasser en attente si un score est effacé
+                    match.played = false;
                 }
-                saveState();
+        
+                // 1. Sauvegarde dans Firebase ou LocalStorage
+                if (isFirebaseActive && dbRef) {
+                    const state = { teams, currentRound, tournamentActive, matches, courtsCount };
+                    dbRef.set(state); // Envoi direct sans passer par saveState() pour éviter les boucles
+                } else {
+                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+                }
+        
+                // 2. Mise à jour immédiate des autres écrans (sans toucher aux inputs du terrain actuel)
+                renderPublicUI();
+                renderStandingsTable('standings-body');
+                buildTvSlides();
+                renderTvSlide();
             }
         }
 
