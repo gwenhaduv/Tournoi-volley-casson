@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire de Tournoi Volley 4x4 sur Herbe</title>
+    <title>Tournoi Volley 4x4 CASSON</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -63,9 +63,9 @@
                 <div class="text-center md:text-left">
                     <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full">CASSON • 22 MAI 2027</span>
                     <h1 class="text-3xl md:text-5xl font-extrabold mt-3 tracking-tight flex items-center justify-center md:justify-start gap-3">
-                        <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi Volley Herbe
+                        <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi de volley 4x4 sur herbe
                     </h1>
-                    <p class="text-sm md:text-base text-emerald-100/80 mt-1">6 Terrains Disponibles • Début 10h30 | Fin 18h00</p>
+                    <p class="text-sm md:text-base text-emerald-100/80 mt-1"> Début 10h30 | Fin 18h00</p>
                 </div>
                 
                 <div class="flex flex-col items-stretch sm:items-center gap-2">
@@ -506,7 +506,7 @@
 
         function generateSingleName() {
             const index = Math.floor(Math.random() * sampleNames.length);
-            const name = sampleNames[index] + " #" + Math.floor(Math.random() * 90 + 10);
+            const name = sampleNames[index];
             if (!teams.includes(name)) {
                 document.getElementById('new-team-name').value = name;
             } else {
@@ -720,12 +720,16 @@
             if (teams.length === 0) {
                 container.innerHTML = `<p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>`;
             } else {
-                container.innerHTML = teams.map(t => `
-                    <span class="bg-white border border-gray-200 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                        ${t}
-                        ${!tournamentActive ? `<i onclick="removeTeam('${t.replace(/'/g, "\\'")}')" class="fa-solid fa-xmark text-red-400 hover:text-red-600 cursor-pointer text-[11px]"></i>` : ''}
-                    </span>
-                `).join('');
+                let html = "";
+                teams.forEach((t, index) => {
+                    html += `
+                        <span class="bg-white border border-gray-200 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                            ${t}
+                            ${!tournamentActive ? `<i onclick="removeTeamByIndex(${index})" class="fa-solid fa-xmark text-red-400 hover:text-red-600 cursor-pointer text-[11px]"></i>` : ''}
+                        </span>
+                    `;
+                });
+                container.innerHTML = html;
             }
 
             const launchBtn = document.getElementById('launch-btn');
@@ -743,7 +747,7 @@
                     : "bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed w-full sm:w-auto";
                 launchBtn.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi`;
                 document.getElementById('current-round-label').innerText = `Ronde -`;
-                
+        
                 document.getElementById('courts-grid').innerHTML = `
                     <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
                         <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
