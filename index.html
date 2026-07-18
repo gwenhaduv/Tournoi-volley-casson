@@ -168,13 +168,18 @@
                     </div>
                     <div class="mb-4">
                         <label for="courts-count-select" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
-                        <select id="courts-count-select" onchange="changeCourtsCount(this.value)" class="w-full sm:w-auto px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-grass-500 bg-white shadow-sm">
-                            <option value="2">2 Terrains</option>
-                            <option value="3">3 Terrains</option>
-                           <option value="4" selected>4 Terrains</option>
-                            <option value="5">5 Terrains</option>
-                            <option value="6">6 Terrains</option>
-                        </select>
+                        <div class="mb-4">
+                            <label for="courts-count-input" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
+                            <input 
+                                id="courts-count-input" 
+                                type="number" 
+                                min="1" 
+                                max="20" 
+                                value="4" 
+                                onchange="changeCourtsCount(this.value)" 
+                                class="w-full sm:w-32 px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-grass-500 bg-white shadow-sm font-semibold"
+                            />
+                        </div>
                     </div>
                     <div class="flex justify-end">
                         <button id="launch-btn" onclick="startTournament()" disabled class="bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed transition-all w-full sm:w-auto">
@@ -420,11 +425,11 @@
                     }
 
                     // Met à jour visuellement le select HTML s'il existe sur la page
-                    const selectElement = document.getElementById('courts-count-select');
-                    if (selectElement) {
-                        selectElement.value = courtsCount;
-                        // Désactive le choix si le tournoi a commencé
-                        selectElement.disabled = tournamentActive; 
+                    const inputElement = document.getElementById('courts-count-input');
+                    if (inputElement) {
+                        inputElement.value = courtsCount;
+                        // Désactive le champ si le tournoi a commencé pour éviter les modifications accidentelles
+                        inputElement.disabled = tournamentActive;
                     }
 
                     // --- FORÇAGE DIRECT DU RENDU ---
@@ -648,17 +653,26 @@
 
         // --- Nombre de terrain
         function changeCourtsCount(value) {
+            const inputElement = document.getElementById('courts-count-input');
+    
             if (tournamentActive) {
                 alert("Impossible de changer le nombre de terrains pendant un tournoi en cours !");
-                // On remet la valeur visuelle précédente si le tournoi est actif
-                document.getElementById('courts-count-select').value = courtsCount;
+                if (inputElement) inputElement.value = courtsCount;
                 return;
             }
     
-            courtsCount = parseInt(value, 10);
+            let parsedValue = parseInt(value, 10);
+    
+            // Sécurité : si la saisie est vide, incorrecte ou inférieure à 1
+            if (isNaN(parsedValue) || parsedValue < 1) {
+                alert("Veuillez entrer un nombre de terrains valide (minimum 1).");
+                if (inputElement) inputElement.value = courtsCount; // On remet la valeur précédente
+                return;
+            }
+    
+            courtsCount = parsedValue;
             saveState();
     
-            // Si la fonction renderCourts existe, on rafraîchit l'affichage à blanc
             if (typeof renderCourts === 'function') {
                 renderCourts();
             }
