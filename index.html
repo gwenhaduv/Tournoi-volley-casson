@@ -16,10 +16,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/csscoreB?family=Outfit:wght@300;400;500;600;700;800&display=swap');
         body {
             font-family: 'Outfit', sans-serif;
             background-color: #f4f7f5;
+        }
+        .fade-slide {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
         }
     </style>
     <script>
@@ -70,7 +73,7 @@
                         <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
                     </button>
                     <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
+                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant (1 par 1) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
                 </div>
             </div>
@@ -163,21 +166,20 @@
                     <div id="teams-container" class="mt-6 flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-dashed border-gray-200 rounded-xl bg-gray-50/50 mb-4">
                         <p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>
                     </div>
-
-                    <!-- Choix des terrains -->
-                    <div class="mb-4">
-                        <label for="courts-count-input" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
-                        <input 
-                            id="courts-count-input" 
-                            type="number" 
-                            min="1" 
-                            max="20" 
-                            value="1" 
-                            onchange="changeCourtsCount(this.value)" 
-                            class="w-full sm:w-32 px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-grass-500 bg-white shadow-sm font-semibold"
-                        />
+                    <div class="mb-4">            
+                        <div class="mb-4">
+                            <label for="courts-count-input" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
+                            <input 
+                                id="courts-count-input" 
+                                type="number" 
+                                min="1" 
+                                max="20" 
+                                value="1" 
+                                onchange="changeCourtsCount(this.value)" 
+                                class="w-full sm:w-32 px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-grass-500 bg-white shadow-sm font-semibold"
+                            />
+                        </div>
                     </div>
-
                     <div class="flex justify-end">
                         <button id="launch-btn" onclick="startTournament()" disabled class="bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed transition-all w-full sm:w-auto">
                             <i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi
@@ -202,10 +204,10 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Courts Grid -->
+                    <!-- 6 Courts Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="courts-grid">
                         <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
-                            <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce"></i>
+                            <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
                             <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
                         </div>
                     </div>
@@ -256,6 +258,7 @@
         </main>
     </div>
 
+
     <!-- ========================================== -->
     <!-- ÉCRAN 2 : AFFICHAGE PUBLIC CLASSIQUE       -->
     <!-- ========================================== -->
@@ -283,7 +286,6 @@
                         </h2>
                         <span id="public-round-label" class="bg-grass-700 text-white text-xs font-bold px-3 py-1 rounded-lg">Ronde -</span>
                     </div>
-                    <!-- Liste dynamique des terrains publics -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="public-courts-grid"></div>
                 </div>
             </div>
@@ -313,8 +315,9 @@
         </main>
     </div>
 
+
     <!-- ========================================== -->
-    <!-- ÉCRAN 3 : CAROUSEL TV DÉFILANT             -->
+    <!-- ÉCRAN 3 : NOUVEAU CAROUSEL TV DÉFILANT    -->
     <!-- ========================================== -->
     <div id="view-tv" class="hidden bg-gray-950 min-h-screen text-white flex flex-col justify-between p-6">
         <div class="flex justify-between items-center border-b border-gray-800 pb-4">
@@ -347,9 +350,8 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- COMPLÉMENT : SCRIPTS & LOGIQUE DE L'APP    -->
-    <!-- ========================================== -->
+
+    <!-- App Logic Script -->
     <script>
         // ==========================================
         // 🛠 CONFIGURATION FIREBASE INTEGRÉE
@@ -381,7 +383,7 @@
         let matches = [];
         let courtsCount = 1;
 
-        // Sauvegarde et synchronisation de l'état
+        // Sauvegarde centralisée
         function saveState() {
             const state = { teams, currentRound, tournamentActive, matches, courtsCount };
             if (isFirebaseActive) {
@@ -392,7 +394,7 @@
             }
         }
 
-        // Écoute des changements Firebase en temps réel
+        // Écoute Firebase
         if (isFirebaseActive) {
             dbRef.on('value', (snapshot) => {
                 try {
@@ -424,7 +426,7 @@
                     buildTvSlides();
                     renderTvSlide();
                 } catch (error) {
-                    console.error("Erreur de synchronisation Firebase :", error);
+                    console.error("Erreur critique Firebase :", error);
                 }
             });
         }
@@ -444,9 +446,7 @@
             "Les Smashers Verts", "Block Party", "Grass Finders", "Service Gagnant",
             "AeroSpike", "Ace Ventura", "Les 4 Fantastiques", "Herbe & Volley",
             "Sand-o-Herbe", "Net Raiders", "Les Serveurs Fous", "Plongeon Fatal",
-            "La Smacherie", "Passe Décisive", "Volley-au-Vent", "Les Brins d’Herbe",
-            "Les Gazons Volants", "Smash Attack", "Les Ace Hunters", "Les Sans Filets",
-            "Les Furieux du Terrain", "Les Renards Sautillants"
+            "La Smacherie", "Passe Décisive", "Volley-au-Vent"
         ];
 
         function openInNewTab(view) {
@@ -509,7 +509,7 @@
         }
 
         function globalReset() {
-            if (confirm("🚨 Voulez-vous TOUT réinitialiser (équipes et scores) ?")) {
+            if (confirm("🚨 Voulez-vous TOUT réinitialiser ?")) {
                 teams = []; currentRound = 1; tournamentActive = false; matches = []; courtsCount = 1;
                 localStorage.removeItem('volley_tournament_state');
                 if (isFirebaseActive && dbRef) { saveState(); } else { refreshActiveView(); }
@@ -547,19 +547,14 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(evt) {
-                try {
-                    const workbook = XLSX.read(evt.target.result, { type: 'binary' });
-                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-                    rows.forEach(row => {
-                        if (row && row[0]) {
-                            const name = row[0].toString().trim();
-                            if (name && !teams.includes(name)) teams.push(name);
-                        }
-                    });
-                    saveState();
-                } catch (e) {
-                    alert("Erreur lors de la lecture du fichier Excel.");
-                }
+                const rows = XLSX.utils.sheet_to_json(XLSX.read(evt.target.result, { type: 'binary' }).Sheets[workbook.SheetNames[0]], { header: 1 });
+                rows.forEach(row => {
+                    if (row && row[0]) {
+                        const name = row[0].toString().trim();
+                        if (name && !teams.includes(name)) teams.push(name);
+                    }
+                });
+                saveState();
             };
             reader.readAsBinaryString(file);
         }
@@ -571,7 +566,7 @@
             saveState();
         }
 
-        // --- ALGORITHME DE BRASSAGE DE RONDE ---
+        // --- ALGORITHME DE BRASSAGE SIMPLIFIÉ (Pour exemple fonctionnel) ---
         function startTournament() {
             if (teams.length < 2) return;
             tournamentActive = true;
@@ -581,10 +576,11 @@
         }
 
         function nextRound() {
+            // Vérifier si tous les matchs du round actuel sont joués
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             const allPlayed = currentRoundMatches.every(m => m.played || m.isBye);
             if (!allPlayed) {
-                alert("Veuillez valider tous les scores de la ronde actuelle avant de passer à la suivante.");
+                alert("Vous devez valider tous les scores de la ronde actuelle avant de passer à la suivante !");
                 return;
             }
             currentRound++;
@@ -593,7 +589,8 @@
 
         function generateRound() {
             let copyTeams = [...teams];
-            copyTeams.sort(() => Math.random() - 0.5); // Brassage aléatoire des paires
+            // Mélange simple pour créer des paires
+            copyTeams.sort(() => Math.random() - 0.5);
             
             let newMatches = [];
             let idCounter = matches.length + 1;
@@ -612,7 +609,7 @@
                 });
             }
 
-            // Gestion de l'exempt si nombre impair d'équipes
+            // Gestion de l'exempt (nombre impair)
             if (copyTeams.length === 1) {
                 newMatches.push({
                     id: idCounter++,
@@ -627,7 +624,7 @@
                 });
             }
 
-            // Attribution ordonnée des terrains physiques
+            // Attribution des terrains dynamiques
             let currentCourt = 1;
             newMatches.forEach(match => {
                 if (!match.isBye && currentCourt <= courtsCount) {
@@ -640,7 +637,7 @@
             saveState();
         }
 
-        // --- GESTION ET VALIDATION DES SCORES ---
+        // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
         function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
@@ -652,7 +649,7 @@
             const match = matches.find(m => m.id === matchId);
             if (match) {
                 if (match.scoreA === null || match.scoreB === null || isNaN(match.scoreA) || isNaN(match.scoreB)) {
-                    alert("Les deux scores doivent être saisis avant la validation.");
+                    alert("Veuillez remplir les deux scores avant de valider.");
                     return;
                 }
                 match.played = true;
@@ -660,7 +657,7 @@
             }
         }
 
-        // --- CALCUL DU CLASSEMENT ---
+        // --- CALCUL DU CLASSEMENT UNIFORMISÉ ---
         function computeStandings() {
             let table = {};
             teams.forEach(t => table[t] = { pts: 0, played: 0 });
@@ -684,7 +681,7 @@
                 } else if (m.scoreB > m.scoreA) {
                     table[m.teamB].pts += 3; table[m.teamA].pts += 1;
                 } else {
-                    table[m.teamA].pts += 2; table[m.teamB].pts += 2; // Match nul
+                    table[m.teamA].pts += 2; table[m.teamB].pts += 2;
                 }
             });
 
@@ -693,10 +690,10 @@
             })).sort((a, b) => b.pts - a.pts || b.played - a.played);
         }
 
-        // --- RENDU RÉSULTATS INTERFACE ADMINISTRATIVE ---
         function updateUI() {
             document.getElementById('team-count-badge').innerText = `${teams.length} Équipe(s)`; 
             
+            // Bouton ronde suivante réactivité
             const nextRoundBtn = document.getElementById('next-round-btn');
             if (nextRoundBtn) {
                 nextRoundBtn.disabled = !tournamentActive;
@@ -816,7 +813,6 @@
             });
         }
 
-        // --- RENDU ÉCRAN PUBLIC RÉSULTATS ---
         function renderPublicUI() {
             const label = document.getElementById('public-round-label');
             if (label) label.innerText = tournamentActive ? `Ronde ${currentRound}` : 'Ronde -';
@@ -855,7 +851,7 @@
             grid.innerHTML = html;
         }
 
-        // --- MODULE ÉCRAN TV PROJETÉ ---
+        // --- CAROUSEL TV REFAIT ET COMPATIBLE ---
         function startTvCarousel() {
             currentTvIndex = 0;
             buildTvSlides();
@@ -878,12 +874,14 @@
 
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             
+            // Création d'une slide individuelle par match en cours
             currentRoundMatches.forEach(m => {
                 if (!m.isBye) {
                     tvSlides.push({ type: 'match', data: m });
                 }
             });
 
+            // Slide pour les équipes exemptes s'il y en a
             const exempts = currentRoundMatches.filter(m => m.isBye);
             if (exempts.length > 0) {
                 tvSlides.push({ type: 'exempt', data: exempts });
