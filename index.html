@@ -414,13 +414,13 @@
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         matches = state.matches || [];
-                        courtsCount = state.courtsCount || 41;
+                        courtsCount = state.courtsCount || 1;
                     } else {
                         teams = [];
                         currentRound = 1;
                         tournamentActive = false;
                         matches = [];
-                        courtsCount = 4;
+                        courtsCount = 1;
                     }
 
                     // Met à jour visuellement le select HTML s'il existe sur la page
@@ -691,41 +691,33 @@
         }
 
         function generateRound() {
-            let pool = [...teams];
-            for (let i = pool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pool[i], pool[j]] = [pool[j], pool[i]];
+            let currentCourt = 1;
+
+            newMatches.forEach((match, index) => {
+                // Si on a plus de matchs que de terrains disponibles, 
+                // les matchs suivants attendront qu'un terrain se libère (court = 0 ou temporisé)
+                if (currentCourt <= courtsCount) {
+                    match.court = currentCourt;
+                    currentCourt++;
+                } else {
+                    // Option A : Mettre sur le terrain 0 ou null pour indiquer "En attente de terrain libre"
+                    match.court = 0; 
+                }
+        
+                // Sécurisation des propriétés pour éviter le 'undefined' dans l'UI
+                match.round = currentRound;
+                match.played = false;
+                match.scoreA = null;
+                match.scoreB = null;
+            });
+
+            // Fusionner ou écraser dans ton tableau global
+            if (currentRound === 1) {
+                matches = newMatches;
+            } else {
+                matches = [...matches, ...newMatches];
             }
 
-            let court = 1;
-            const newMatches = [];
-
-            while (pool.length >= 2 && court <= 6) {
-                const t1 = pool.shift();
-                const t2 = pool.shift();
-                newMatches.push({
-                    round: currentRound,
-                    court: court,
-                    t1: t1, t2: t2,
-                    s1: "", s2: "",
-                    completed: false
-                });
-                court++;
-            }
-
-            while (pool.length > 0) {
-                const t = pool.shift();
-                newMatches.push({
-                    round: currentRound,
-                    court: 0,
-                    t1: t, t2: "EXEMPT",
-                    s1: 21, s2: 0,
-                    completed: true,
-                    isBye: true
-                });
-            }
-
-            matches = [...matches, ...newMatches];
             saveState();
         }
 
