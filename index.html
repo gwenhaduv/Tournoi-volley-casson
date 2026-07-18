@@ -347,7 +347,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyC0jCmtlxUZPNquETfFTZK09q4-sAz9NHE",
             authDomain: "tournoi-volley-casson-2027.firebaseapp.com",
-            databaseURL: "https://tournoi-volley-casson-2027-default-rtdb.firebaseio.com",
+            databaseURL: "https://tournoi-volley-casson-2027-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "tournoi-volley-casson-2027",
             storageBucket: "tournoi-volley-casson-2027.firebasestorage.app",
             messagingSenderId: "1006967763633",
@@ -412,9 +412,12 @@
         }
 
         function refreshActiveView() {
-            const view = document.getElementById('view-public').className !== 'hidden' ? 'results' : 
-                         (document.getElementById('view-tv').className !== 'hidden' ? 'tv' : 'admin');
-            
+            const viewPublic = document.getElementById('view-public');
+            const viewTv = document.getElementById('view-tv');
+    
+            const view = (viewPublic && viewPublic.className !== 'hidden') ? 'results' : 
+                         ((viewTv && viewTv.className !== 'hidden') ? 'tv' : 'admin');
+    
             if (view === 'results') {
                 renderPublicUI();
             } else if (view === 'tv') {
