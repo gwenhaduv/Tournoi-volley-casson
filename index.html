@@ -391,8 +391,15 @@
                     currentRound = state.currentRound || 1;
                     tournamentActive = state.tournamentActive || false;
                     matches = state.matches || [];
-                    refreshActiveView();
+                } else {
+                    // Si Firebase est totalement vide, on initialise proprement à vide
+                    teams = [];
+                            currentRound = 1;
+                    tournamentActive = false;
+                    matches = [];
                 }
+                // On force le rafraîchissement visuel dans TOUS les cas
+                refreshActiveView();
             });
         } else {
             window.addEventListener('storage', (e) => {
@@ -523,14 +530,23 @@
                 currentRound = 1;
                 tournamentActive = false;
                 matches = [];
-                
-                document.getElementById('new-team-name').value = '';
+        
+                // Nettoyage des champs de saisie
+                if(document.getElementById('new-team-name')) document.getElementById('new-team-name').value = '';
                 if(document.getElementById('bulk-teams-input')) document.getElementById('bulk-teams-input').value = '';
                 if(document.getElementById('excel-file-input')) document.getElementById('excel-file-input').value = '';
-                
+        
+                // Nettoyage LocalStorage
                 localStorage.removeItem('volley_tournament_state');
-                saveState();
-                updateUI(); 
+        
+                // Nettoyage Firebase synchrone ou local
+                if (isFirebaseActive && dbRef) {
+                    const emptyState = { teams: [], currentRound: 1, tournamentActive: false, matches: [] };
+                    dbRef.set(emptyState); 
+                } else {
+                    refreshActiveView();
+                }
+        
                 alert("Le système a été entièrement réinitialisé ! Vous pouvez ajouter vos équipes.");
             }
         }
