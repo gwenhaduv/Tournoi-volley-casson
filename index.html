@@ -641,18 +641,15 @@
         function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
+                // Si l'utilisateur efface la case, on repasse la valeur à null
                 match[field] = value === "" ? null : parseInt(value, 10);
-            }
-        }
-
-        function validateMatch(matchId) {
-            const match = matches.find(m => m.id === matchId);
-            if (match) {
-                if (match.scoreA === null || match.scoreB === null || isNaN(match.scoreA) || isNaN(match.scoreB)) {
-                    alert("Veuillez remplir les deux scores avant de valider.");
-                    return;
+                
+                // Validation instantanée : si les deux scores sont saisis, le match est comptabilisé
+                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
+                    match.played = true;
+                } else {
+                    match.played = false; // Permet de repasser en attente si un score est effacé
                 }
-                match.played = true;
                 saveState();
             }
         }
@@ -764,20 +761,13 @@
                             <span class="truncate w-[42%] text-left">${match.teamB}</span>
                         </div>
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
-                            <input type="number" min="0" value="${match.scoreA ?? ''}" placeholder="0" 
-                                onchange="updateMatchScore(${match.id}, 'scoreA', this.value)"
-                                ${match.played ? 'disabled' : ''} 
-                                class="w-12 text-center p-1 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500">
+                            <input type="number" min="0" id="input-scoreA-${match.id}" value="${match.scoreA ?? ''}" placeholder="0" 
+                                oninput="updateMatchScoreLive(${match.id}, 'scoreA', this.value)"
+                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                             <span class="text-gray-400 font-bold">-</span>
-                            <input type="number" min="0" value="${match.scoreB ?? ''}" placeholder="0" 
-                                onchange="updateMatchScore(${match.id}, 'scoreB', this.value)"
-                                ${match.played ? 'disabled' : ''} 
-                                class="w-12 text-center p-1 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500">
-                            ${!match.played ? `
-                                <button onclick="validateMatch(${match.id})" class="ml-2 px-2 py-1 bg-grass-500 text-white text-xs font-bold rounded-lg hover:bg-grass-600 transition-colors">
-                                    Valider
-                                </button>
-                            ` : ''}
+                            <input type="number" min="0" id="input-scoreB-${match.id}" value="${match.scoreB ?? ''}" placeholder="0" 
+                                oninput="updateMatchScoreLive(${match.id}, 'scoreB', this.value)"
+                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                         </div>
                     `;
                 } else {
