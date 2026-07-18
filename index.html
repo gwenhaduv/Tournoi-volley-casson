@@ -166,7 +166,16 @@
                     <div id="teams-container" class="mt-6 flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-dashed border-gray-200 rounded-xl bg-gray-50/50 mb-4">
                         <p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>
                     </div>
-
+                    <div class="mb-4">
+                        <label for="courts-count-select" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
+                        <select id="courts-count-select" onchange="changeCourtsCount(this.value)" class="w-full sm:w-auto px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-grass-500 bg-white shadow-sm">
+                            <option value="2">2 Terrains</option>
+                            <option value="3">3 Terrains</option>
+                           <option value="4" selected>4 Terrains</option>
+                            <option value="5">5 Terrains</option>
+                            <option value="6">6 Terrains</option>
+                        </select>
+                    </div>
                     <div class="flex justify-end">
                         <button id="launch-btn" onclick="startTournament()" disabled class="bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed transition-all w-full sm:w-auto">
                             <i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi
@@ -370,10 +379,11 @@
         let currentRound = 1;
         let tournamentActive = false;
         let matches = [];
+        let courtsCount = 4; // Valeur par défaut
 
         // Sauvegarde centralisée (Firebase + LocalStorage)
         function saveState() {
-            const state = { teams, currentRound, tournamentActive, matches };
+            const state = { teams, currentRound, tournamentActive, matches, courtsCount };
             if (isFirebaseActive) {
                 dbRef.set(state);
             } else {
@@ -400,11 +410,21 @@
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         matches = state.matches || [];
+                        courtsCount = state.courtsCount || 4;
                     } else {
                         teams = [];
                         currentRound = 1;
                         tournamentActive = false;
                         matches = [];
+                        courtsCount = 4;
+                    }
+
+                    // Met à jour visuellement le select HTML s'il existe sur la page
+                    const selectElement = document.getElementById('courts-count-select');
+                    if (selectElement) {
+                        selectElement.value = courtsCount;
+                        // Désactive le choix si le tournoi a commencé
+                        selectElement.disabled = tournamentActive; 
                     }
 
                     // --- FORÇAGE DIRECT DU RENDU ---
@@ -425,15 +445,16 @@
             const viewPublic = document.getElementById('view-public');
             const viewTv = document.getElementById('view-tv');
     
-            const view = (viewPublic && viewPublic.className !== 'hidden') ? 'results' : 
-                         ((viewTv && viewTv.className !== 'hidden') ? 'tv' : 'admin');
+            // Détection stricte de la vue active
+            const view = (viewPublic && !viewPublic.classList.contains('hidden')) ? 'results' : 
+                         ((viewTv && !viewTv.classList.contains('hidden')) ? 'tv' : 'admin');
     
             if (view === 'results') {
-                renderPublicUI();
+                if (typeof renderPublicUI === 'function') renderPublicUI();
             } else if (view === 'tv') {
-                buildTvSlides();
-                renderTvSlide();
-            } else {
+                if (typeof buildTvSlides === 'function') buildTvSlides();
+                if (typeof renderTvSlide === 'function') renderTvSlide();
+                    } else {
                 updateUI();
             }
         }
@@ -625,6 +646,23 @@
             reader.readAsBinaryString(file);
         }
 
+        // --- Nombre de terrain
+        function changeCourtsCount(value) {
+            if (tournamentActive) {
+                alert("Impossible de changer le nombre de terrains pendant un tournoi en cours !");
+                // On remet la valeur visuelle précédente si le tournoi est actif
+                document.getElementById('courts-count-select').value = courtsCount;
+                return;
+            }
+    
+            courtsCount = parseInt(value, 10);
+            saveState();
+    
+            // Si la fonction renderCourts existe, on rafraîchit l'affichage à blanc
+            if (typeof renderCourts === 'function') {
+                renderCourts();
+            }
+        }
         // --- ENGINE GENERATION DES RONDES ---
         function startTournament() {
             if (teams.length < 2) return;
@@ -912,22 +950,75 @@
         }
 
         function buildTvSlides() {
-            tvSlides = [];
-            const currentMatches = matches.filter(m => m.round === currentRound);
-            
-            if (!tournamentActive || currentMatches.length === 0) {
-                tvSlides.push({ type: 'empty' });
+            tvSlides = []; // On vide les anciennes diapositives
+
+            // CONDITION DE BLOCAGE : Si le tournoi n'est pas actif OU s'il n'y a aucun match généré
+            if (!tournamentActive || !matches || matches.length === 0) {
+                tvSlides.push({
+                    type: 'message',
+                    title: 'Tournoi de Volley',
+                    content: `
+                        <div class="flex flex-col items-center justify-center h-full text-center p-8">
+                            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-grass-500 mb-6"></div>
+                            <h2 class="text-3xl font-bold text-gray-700 mb-2">Attente du lancement du tournoi</h2>
+                            <p class="text-gray-500 text-lg">Les terrains et les matchs s'afficheront ici dès le coup d'envoi !</p>
+                        </div>
+                    `
+                });
                 return;
             }
 
-            const playingMatches = currentMatches.filter(m => m.court > 0);
-            playingMatches.forEach(m => {
-                tvSlides.push({ type: 'match', data: m });
+            // --- SLIDE 1 : LES MATCHS EN COURS SUR LES TERRAINS ---
+            // On utilise la variable dynamique courtsCount qu'on vient d'ajouter
+            let matchesHtml = '<div class="grid grid-cols-2 gap-6 w-full max-w-5xl">';
+    
+            for (let i = 1; i <= courtsCount; i++) {
+                // Recherche du match affecté à ce terrain pour le round actuel
+                const match = matches.find(m => m.round === currentRound && m.court === i);
+        
+                matchesHtml += `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between min-h-[140px]">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-grass-100 text-grass-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Terrain ${i}</span>
+                            ${match && match.played ? '<span class="text-xs text-gray-400 font-medium">Terminé</span>' : '<span class="text-xs text-amber-500 font-medium animate-pulse">En cours</span>'}
+                        </div>
+                `;
+        
+                if (match) {
+                    matchesHtml += `
+                        <div class="flex items-center justify-between my-2 text-xl font-bold text-gray-800">
+                            <div class="w-[45%] text-right truncate">${match.teamA}</div>
+                            <div class="text-gray-300 px-2 text-sm font-normal">VS</div>
+                            <div class="w-[45%] text-left truncate">${match.teamB}</div>
+                        </div>
+                        <div class="text-center text-lg font-mono text-grass-600 font-bold mt-1">
+                            ${match.played ? `${match.scoreA} - ${match.scoreB}` : '-  -'}
+                        </div>
+                    `;
+                } else {
+                    matchesHtml += `
+                        <div class="flex items-center justify-center h-full text-gray-400 italic text-sm py-4">
+                            Aucun match sur ce terrain
+                        </div>
+                    `;
+                }
+                matchesHtml += `</div>`;
+            }
+            matchesHtml += '</div>';
+
+            tvSlides.push({
+                type: 'courts',
+                title: `Matchs en cours - Round ${currentRound}`,
+                content: matchesHtml
             });
 
-            const exemptMatches = currentMatches.filter(m => m.isBye);
-            if (exemptMatches.length > 0) {
-                tvSlides.push({ type: 'exempt', data: exemptMatches });
+            // --- SLIDE 2 : LE CLASSEMENT TEMPORAIRE ---
+            if (typeof generateRankingHtml === 'function') {
+                tvSlides.push({
+                    type: 'ranking',
+                    title: `Classement Général (Live)`,
+                    content: generateRankingHtml() // Assure-toi que cette fonction renvoie le HTML du tableau
+                });
             }
         }
 
