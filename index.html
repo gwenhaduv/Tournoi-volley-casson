@@ -690,9 +690,10 @@
             generateRound();
         }
 
-        function generateRound() {
+        // AJOUTE newMatches ICI 
+        function generateRound(newMatches = []) {
             let currentCourt = 1;
-
+        
             newMatches.forEach((match, index) => {
                 // Si on a plus de matchs que de terrains disponibles, 
                 // les matchs suivants attendront qu'un terrain se libère (court = 0 ou temporisé)
@@ -710,7 +711,7 @@
                 match.scoreA = null;
                 match.scoreB = null;
             });
-
+        
             // Fusionner ou écraser dans ton tableau global
             if (currentRound === 1) {
                 matches = newMatches;
@@ -719,7 +720,7 @@
             }
 
             saveState();
-        }
+        } 
 
         function updateScore(matchIndex, teamNode, val) {
             const currentMatches = matches.filter(m => m.round === currentRound);
