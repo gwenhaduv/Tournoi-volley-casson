@@ -385,34 +385,38 @@
         // Écoute des changements en temps réel
         if (isFirebaseActive) {
             dbRef.on('value', (snapshot) => {
-                const state = snapshot.val();
-                if (state) {
-                    teams = state.teams || [];
-                    currentRound = state.currentRound || 1;
-                    tournamentActive = state.tournamentActive || false;
-                    matches = state.matches || [];
-                } else {
-                    // Si Firebase est totalement vide, on initialise proprement à vide
-                    teams = [];
-                            currentRound = 1;
-                    tournamentActive = false;
-                    matches = [];
-                }
-                // On force le rafraîchissement visuel dans TOUS les cas
-                refreshActiveView();
-            });
-        } else {
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'volley_tournament_state') {
-                    const saved = localStorage.getItem('volley_tournament_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        teams = state.teams || [];
+                try {
+                    const state = snapshot.val();
+            
+                    if (state) {
+                        // Firebase convertit un tableau indexé (0, 1, 2) en tableau JS, 
+                        // mais si des indices manquent, il peut créer un objet ou mettre des trous.
+                        // Cette ligne garantit qu'on extrait un vrai tableau propre sans bugs.
+                        if (state.teams) {
+                            teams = Array.isArray(state.teams) ? state.teams.filter(Boolean) : Object.values(state.teams);
+                        } else {
+                            teams = [];
+                        }
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         matches = state.matches || [];
-                        refreshActiveView();
+                    } else {
+                        teams = [];
+                        currentRound = 1;
+                        tournamentActive = false;
+                        matches = [];
                     }
+
+                    // --- FORÇAGE DIRECT DU RENDU ---
+                    // Au lieu de passer par refreshActiveView() qui peut planter en route,
+                    // on force la mise à jour immédiate de l'interface des équipes.
+                    updateUI();
+
+                    // On met aussi à jour le reste si les fonctions existent
+                    if (typeof renderPublicUI === 'function') renderPublicUI();
+            
+                } catch (error) {
+                    console.error("Erreur critique lors de la réception des données Firebase :", error);
                 }
             });
         }
