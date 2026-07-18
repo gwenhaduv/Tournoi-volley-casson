@@ -166,8 +166,7 @@
                     <div id="teams-container" class="mt-6 flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-dashed border-gray-200 rounded-xl bg-gray-50/50 mb-4">
                         <p class="text-xs text-gray-400 w-full text-center py-4">Aucune équipe enregistrée pour le moment.</p>
                     </div>
-                    <div class="mb-4">
-                        <label for="courts-count-select" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
+                    <div class="mb-4">            
                         <div class="mb-4">
                             <label for="courts-count-input" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nombre de terrains disponibles :</label>
                             <input 
@@ -175,7 +174,7 @@
                                 type="number" 
                                 min="1" 
                                 max="20" 
-                                value="4" 
+                                value="1" 
                                 onchange="changeCourtsCount(this.value)" 
                                 class="w-full sm:w-32 px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-grass-500 bg-white shadow-sm font-semibold"
                             />
@@ -384,7 +383,7 @@
         let currentRound = 1;
         let tournamentActive = false;
         let matches = [];
-        let courtsCount = 4; // Valeur par défaut
+        let courtsCount = 1; // Valeur par défaut
 
         // Sauvegarde centralisée (Firebase + LocalStorage)
         function saveState() {
@@ -415,7 +414,7 @@
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         matches = state.matches || [];
-                        courtsCount = state.courtsCount || 4;
+                        courtsCount = state.courtsCount || 41;
                     } else {
                         teams = [];
                         currentRound = 1;
@@ -788,7 +787,7 @@
 
         // --- RENDERING MANAGEMENT ---
         function updateUI() {
-            document.getElementById('team-count-badge').innerText = `${teams.length} Équipe(s)`;
+            document.getElementById('team-count-badge').innerText = `${teams.length} Équipe(s)`; renderCourts();
 
             const container = document.getElementById('teams-container');
             if (teams.length === 0) {
@@ -833,49 +832,75 @@
         }
 
         function renderCourts() {
-            const grid = document.getElementById('courts-grid');
-            const currentMatches = matches.filter(m => m.round === currentRound);
-            const activePlaying = currentMatches.filter(m => m.court > 0);
+            const courtsGrid = document.getElementById('courts-grid');
+            if (!courtsGrid) return;
 
-            let html = "";
-            for (let c = 1; c <= 6; c++) {
-                const matchIndex = currentMatches.findIndex(m => m.court === c);
-                if (matchIndex !== -1) {
-                    const m = currentMatches[matchIndex];
-                    html += `
-                        <div class="border border-gray-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between">
-                            <div class="text-xs font-bold text-grass-700 uppercase tracking-wider mb-2 flex justify-between items-center">
-                                <span class="bg-grass-100 text-grass-800 px-2 py-0.5 rounded font-black"><i class="fa-solid fa-map-pin"></i> TERRAIN ${c}</span>
-                                <span class="${m.completed ? 'text-emerald-600' : 'text-amber-500'} font-bold">${m.completed ? 'Terminé' : 'En cours'}</span>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex justify-between items-center gap-2">
-                                    <span class="text-sm font-semibold truncate flex-1">${m.t1}</span>
-                                    <input type="number" value="${m.s1}" oninput="updateScore(${matchIndex}, 1, this.value)" class="w-14 border border-gray-200 rounded-lg p-1 text-center font-bold text-sm focus:ring-1 focus:ring-grass-500">
-                                </div>
-                                <div class="flex justify-between items-center gap-2">
-                                    <span class="text-sm font-semibold truncate flex-1">${m.t2}</span>
-                                    <input type="number" value="${m.s2}" oninput="updateScore(${matchIndex}, 2, this.value)" class="w-14 border border-gray-200 rounded-lg p-1 text-center font-bold text-sm focus:ring-1 focus:ring-grass-500">
-                                </div>
-                            </div>
-                        </div>`;
-                } else {
-                    html += `
-                        <div class="border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50/50 flex items-center justify-center text-xs text-gray-400 h-[116px]">
-                            Terrain ${c} libre
-                        </div>`;
-                }
+            // Si le tournoi n'est pas actif, on laisse le message d'attente par défaut
+            if (!tournamentActive) {
+                courtsGrid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
+                        <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
+                        <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
+                    </div>
+                `;
+                return;
             }
-            grid.innerHTML = html;
 
-            const nextBtn = document.getElementById('next-round-btn');
-            const allDone = activePlaying.length > 0 && activePlaying.every(m => m.completed);
-            if (allDone) {
-                nextBtn.disabled = false;
-                nextBtn.className = "bg-grass-600 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shadow hover:bg-grass-700 cursor-pointer transition-all";
-            } else {
-                nextBtn.disabled = true;
-                nextBtn.className = "bg-gray-100 text-gray-400 font-semibold text-xs px-3 py-1.5 rounded-lg cursor-not-allowed";
+            // On vide la grille pour générer les terrains demandés
+            courtsGrid.innerHTML = '';
+
+            // La boucle s'arrête STRICTEMENT au nombre de terrains choisi (courtsCount)
+            for (let i = 1; i <= courtsCount; i++) {
+                // Recherche du match affecté à ce terrain pour le round en cours
+                const match = matches.find(m => m.round === currentRound && m.court === i);
+        
+                let courtHtml = `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Terrain ${i}</span>
+                            ${match && match.played ? 
+                                '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Terminé</span>' : 
+                                '<span class="text-xs bg-grass-50 text-grass-700 px-2 py-0.5 rounded-full font-medium animate-pulse">En cours</span>'}
+                        </div>
+                `;
+
+                if (match) {
+                    courtHtml += `
+                        <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
+                            <span class="truncate w-[42%] text-right">${match.teamA}</span>
+                            <span class="text-xs text-gray-300 font-normal px-1">VS</span>
+                            <span class="truncate w-[42%] text-left">${match.teamB}</span>
+                        </div>
+                
+                        <!-- Zone de saisie du score pour l'admin -->
+                        <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
+                            <input type="number" min="0" value="${match.scoreA ?? ''}" placeholder="0" 
+                                onchange="updateMatchScore(${match.id}, 'scoreA', this.value)"
+                                ${match.played ? 'disabled' : ''} 
+                                class="w-12 text-center p-1 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500">
+                            <span class="text-gray-400 font-bold">-</span>
+                            <input type="number" min="0" value="${match.scoreB ?? ''}" placeholder="0" 
+                                onchange="updateMatchScore(${match.id}, 'scoreB', this.value)"
+                                ${match.played ? 'disabled' : ''} 
+                                class="w-12 text-center p-1 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500">
+                    
+                            ${!match.played ? `
+                                <button onclick="validateMatch(${match.id})" class="ml-2 px-2 py-1 bg-grass-500 text-white text-xs font-bold rounded-lg hover:bg-grass-600 transition-colors">
+                                    Valider
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    courtHtml += `
+                        <div class="py-6 text-center text-xs text-gray-400 italic">
+                            Aucun match planifié sur ce terrain
+                        </div>
+                    `;
+                }
+
+                courtHtml += `</div>`;
+                courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
         }
 
