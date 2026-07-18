@@ -414,13 +414,13 @@
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         matches = state.matches || [];
-                        courtsCount = state.courtsCount || 41;
+                        courtsCount = state.courtsCount || 1;
                     } else {
                         teams = [];
                         currentRound = 1;
                         tournamentActive = false;
                         matches = [];
-                        courtsCount = 4;
+                        courtsCount = 1;
                     }
 
                     // Met à jour visuellement le select HTML s'il existe sur la page
@@ -435,7 +435,9 @@
                     // Au lieu de passer par refreshActiveView() qui peut planter en route,
                     // on force la mise à jour immédiate de l'interface des équipes.
                     updateUI();
-
+                    buildTvSlides();  // Recrée les slides avec les nouvelles données reçues
+                    renderTvSlide();  // Met à jour l'écran immédiatement si la vue TV est active
+                    
                     // On met aussi à jour le reste si les fonctions existent
                     if (typeof renderPublicUI === 'function') renderPublicUI();
             
@@ -691,41 +693,36 @@
         }
 
         function generateRound() {
-            let pool = [...teams];
-            for (let i = pool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pool[i], pool[j]] = [pool[j], pool[i]];
+            // ... (ici, ton code actuel qui apparie les équipes sous forme de paires/matchs) ...
+            // Supposons que tu as une liste de matchs générés appelée 'newMatches'
+    
+            let currentCourt = 1;
+
+            newMatches.forEach((match, index) => {
+                // Si on a plus de matchs que de terrains disponibles, 
+                // les matchs suivants attendront qu'un terrain se libère (court = 0 ou temporisé)
+                if (currentCourt <= courtsCount) {
+                    match.court = currentCourt;
+                    currentCourt++;
+                } else {
+                    // Option A : Mettre sur le terrain 0 ou null pour indiquer "En attente de terrain libre"
+                    match.court = 0; 
+                }
+        
+                // Sécurisation des propriétés pour éviter le 'undefined' dans l'UI
+                match.round = currentRound;
+                match.played = false;
+                match.scoreA = null;
+                match.scoreB = null;
+            });
+
+              // Fusionner ou écraser dans ton tableau global
+            if (currentRound === 1) {
+                matches = newMatches;
+            } else {
+                matches = [...matches, ...newMatches];
             }
 
-            let court = 1;
-            const newMatches = [];
-
-            while (pool.length >= 2 && court <= 6) {
-                const t1 = pool.shift();
-                const t2 = pool.shift();
-                newMatches.push({
-                    round: currentRound,
-                    court: court,
-                    t1: t1, t2: t2,
-                    s1: "", s2: "",
-                    completed: false
-                });
-                court++;
-            }
-
-            while (pool.length > 0) {
-                const t = pool.shift();
-                newMatches.push({
-                    round: currentRound,
-                    court: 0,
-                    t1: t, t2: "EXEMPT",
-                    s1: 21, s2: 0,
-                    completed: true,
-                    isBye: true
-                });
-            }
-
-            matches = [...matches, ...newMatches];
             saveState();
         }
 
@@ -988,16 +985,20 @@
             }, 5000);
         }
 
-        function buildTvSlides() {
-            tvSlides = []; // On vide les anciennes diapositives
+        let tvSlides = [];
+        let currentTvSlideIndex = 0;
+        let tvTimer = null;
 
-            // CONDITION DE BLOCAGE : Si le tournoi n'est pas actif OU s'il n'y a aucun match généré
+        function buildTvSlides() {
+            tvSlides = [];
+
+            // Sécurité : si le tournoi n'est pas actif ou s'il n'y a pas de matchs
             if (!tournamentActive || !matches || matches.length === 0) {
                 tvSlides.push({
                     type: 'message',
                     title: 'Tournoi de Volley',
                     content: `
-                        <div class="flex flex-col items-center justify-center h-full text-center p-8">
+                        <div class="flex flex-col items-center justify-center h-full text-center p-8 min-h-[400px]">
                             <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-grass-500 mb-6"></div>
                             <h2 class="text-3xl font-bold text-gray-700 mb-2">Attente du lancement du tournoi</h2>
                             <p class="text-gray-500 text-lg">Les terrains et les matchs s'afficheront ici dès le coup d'envoi !</p>
@@ -1007,13 +1008,15 @@
                 return;
             }
 
-            // --- SLIDE 1 : LES MATCHS EN COURS SUR LES TERRAINS ---
-            // On utilise la variable dynamique courtsCount qu'on vient d'ajouter
-            let matchesHtml = '<div class="grid grid-cols-2 gap-6 w-full max-w-5xl">';
-    
+            // --- SLIDE 1 : LES MATCHS SUR LES TERRAINS ---
+            let gridCols = courtsCount === 1 ? 'grid-cols-1' : 'grid-cols-2';
+            if (courtsCount >= 9) gridCols = 'grid-cols-3';
+
+            let matchesHtml = `<div class="grid ${gridCols} gap-6 w-full max-w-5xl mx-auto">`;
+
             for (let i = 1; i <= courtsCount; i++) {
-                // Recherche du match affecté à ce terrain pour le round actuel
-                const match = matches.find(m => m.round === currentRound && m.court === i);
+                // Sécurité : on filtre pour être sûr de ne pas lire un match mal défini
+                const match = matches.find(m => m && m.round === currentRound && m.court === i);
         
                 matchesHtml += `
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between min-h-[140px]">
@@ -1023,7 +1026,8 @@
                         </div>
                 `;
         
-                if (match) {
+                // On vérifie que le match ET ses équipes existent pour éviter le 'undefined'
+                if (match && match.teamA && match.teamB) {
                     matchesHtml += `
                         <div class="flex items-center justify-between my-2 text-xl font-bold text-gray-800">
                             <div class="w-[45%] text-right truncate">${match.teamA}</div>
@@ -1031,13 +1035,13 @@
                             <div class="w-[45%] text-left truncate">${match.teamB}</div>
                         </div>
                         <div class="text-center text-lg font-mono text-grass-600 font-bold mt-1">
-                            ${match.played ? `${match.scoreA} - ${match.scoreB}` : '-  -'}
+                            ${match.played ? `${match.scoreA ?? 0} - ${match.scoreB ?? 0}` : '-  -'}
                         </div>
                     `;
                 } else {
                     matchesHtml += `
                         <div class="flex items-center justify-center h-full text-gray-400 italic text-sm py-4">
-                            Aucun match sur ce terrain
+                            Aucun match en cours
                         </div>
                     `;
                 }
@@ -1056,75 +1060,57 @@
                 tvSlides.push({
                     type: 'ranking',
                     title: `Classement Général (Live)`,
-                    content: generateRankingHtml() // Assure-toi que cette fonction renvoie le HTML du tableau
+                    content: generateRankingHtml()
                 });
             }
         }
-
+        
         function renderTvSlide() {
-            const container = document.getElementById('tv-carousel-container');
-            const bulletsContainer = document.getElementById('tv-bullets');
-            if(!container) return;
-            
-            document.getElementById('tv-round-label').innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
-
+            const container = document.getElementById('tv-content-container');
+            const titleElement = document.getElementById('tv-slide-title');
+            if (!container) return;
+        
             if (tvSlides.length === 0) return;
-            const slide = tvSlides[currentTvIndex];
-
-            container.style.opacity = '0';
-            container.style.transform = 'scale(0.97)';
-
-            setTimeout(() => {
-                if (slide.type === 'empty') {
-                    container.innerHTML = `
-                        <div class="text-center py-12">
-                            <i class="fa-solid fa-volleyball text-6xl text-gray-700 animate-bounce mb-6"></i>
-                            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-400">En attente du lancement...</h2>
-                            <p class="text-sm text-gray-600 mt-2">Dès que la ronde sera générée, les terrains défileront ici.</p>
-                        </div>`;
-                } 
-                else if (slide.type === 'match') {
-                    const m = slide.data;
-                    container.innerHTML = `
-                        <div class="text-center flex flex-col justify-between h-full space-y-8">
-                            <div class="inline-block mx-auto bg-amber-400 text-gray-950 font-black text-2xl sm:text-4xl px-8 py-3 rounded-2xl shadow-lg tracking-wider uppercase">
-                                 TERRAIN ${m.court}
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-7 items-center gap-4 py-6">
-                                <div class="md:col-span-3 text-2xl sm:text-4xl font-extrabold truncate text-white tracking-tight px-2">${m.t1}</div>
-                                <div class="md:col-span-1 text-center font-black text-4xl sm:text-6xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
-                                    ${m.s1 !== "" ? m.s1 : '-'}
-                                </div>
-                                <div class="md:col-span-3 text-2xl sm:text-4xl font-extrabold truncate text-white tracking-tight px-2">${m.t2}</div>
-                            </div>
-
-                            <div class="text-sm font-bold tracking-widest uppercase mt-4">
-                                ${m.completed ? '<span class="text-emerald-400"><i class="fa-solid fa-circle-check"></i> Match Terminé</span>' : '<span class="text-amber-400 animate-pulse"><i class="fa-solid fa-circle-dot"></i> Match en cours</span>'}
-                            </div>
-                        </div>`;
-                }
-                else if (slide.type === 'exempt') {
-                    const listHtml = slide.data.map(m => `<li class="text-xl font-bold text-gray-300 bg-gray-950/40 p-3 rounded-xl border border-gray-800/60">${m.t1}</li>`).join('');
-                    container.innerHTML = `
-                        <div class="text-center py-6">
-                            <div class="inline-block mx-auto bg-gray-800 text-gray-100 font-bold text-lg px-6 py-2 rounded-xl mb-6 uppercase tracking-wider">
-                                <i class="fa-solid fa-bed mr-2 text-grass-500"></i> Équipes Exemptes / Repos
-                            </div>
-                            <ul class="max-w-md mx-auto space-y-2 mt-2">${listHtml}</ul>
-                        </div>`;
-                }
-
-                if (bulletsContainer) {
-                    bulletsContainer.innerHTML = tvSlides.map((_, i) => `
-                        <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
-                    `).join('');
-                }
-
-                container.style.opacity = '1';
-                container.style.transform = 'scale(1)';
-            }, 200);
+        
+            // Sécurité sur l'index
+            if (currentTvSlideIndex >= tvSlides.length) {
+                currentTvSlideIndex = 0;
+            }
+        
+            const currentSlide = tvSlides[currentTvSlideIndex];
+            
+            // Rendu visuel
+            if (titleElement) titleElement.textContent = currentSlide.title;
+            container.innerHTML = currentSlide.content;
         }
+        
+        // --- GESTION DU DEFILEMENT AUTOMATIQUE ---
+        function startTvRotation() {
+            // On nettoie l'ancien timer s'il existe pour éviter qu'ils se superposent
+            if (tvTimer) clearInterval(tvTimer);
+            
+            // Génère les diapositives immédiatement au démarrage
+            buildTvSlides();
+            renderTvSlide();
+        
+            // Lance la rotation toutes les 8 secondes (tu peux changer le temps ici)
+            tvTimer = setInterval(() => {
+                if (tvSlides.length > 1) {
+                    currentTvSlideIndex = (currentTvSlideIndex + 1) % tvSlides.length;
+                    renderTvSlide();
+                } else {
+                    // S'il n'y a qu'une seule slide (ex: message d'attente), on reconstruit au cas où le tournoi ait été lancé
+                    buildTvSlides();
+                    renderTvSlide();
+                }
+            }, 8000);
+        }
+
+// Appel automatique de la fonction au chargement de la page pour initialiser le cycle
+document.addEventListener('DOMContentLoaded', () => {
+    // Si la vue TV est initialisée directement
+    startTvRotation();
+});
     </script>
 </body>
 </html>
