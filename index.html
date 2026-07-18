@@ -826,7 +826,7 @@
         function renderCourts() {
             const courtsGrid = document.getElementById('courts-grid');
             if (!courtsGrid) return;
-
+        
             // Si le tournoi n'est pas actif, on laisse le message d'attente par défaut
             if (!tournamentActive) {
                 courtsGrid.innerHTML = `
@@ -837,15 +837,15 @@
                 `;
                 return;
             }
-
+        
             // On vide la grille pour générer les terrains demandés
             courtsGrid.innerHTML = '';
-
+        
             // La boucle s'arrête STRICTEMENT au nombre de terrains choisi (courtsCount)
             for (let i = 1; i <= courtsCount; i++) {
                 // Recherche du match affecté à ce terrain pour le round en cours
                 const match = matches.find(m => m.round === currentRound && m.court === i);
-        
+                
                 let courtHtml = `
                     <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
                         <div class="flex justify-between items-center mb-2">
@@ -855,7 +855,7 @@
                                 '<span class="text-xs bg-grass-50 text-grass-700 px-2 py-0.5 rounded-full font-medium animate-pulse">En cours</span>'}
                         </div>
                 `;
-
+        
                 if (match) {
                     courtHtml += `
                         <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
@@ -863,7 +863,7 @@
                             <span class="text-xs text-gray-300 font-normal px-1">VS</span>
                             <span class="truncate w-[42%] text-left">${match.teamB}</span>
                         </div>
-                
+                        
                         <!-- Zone de saisie du score pour l'admin -->
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
                             <input type="number" min="0" value="${match.scoreA ?? ''}" placeholder="0" 
@@ -875,7 +875,7 @@
                                 onchange="updateMatchScore(${match.id}, 'scoreB', this.value)"
                                 ${match.played ? 'disabled' : ''} 
                                 class="w-12 text-center p-1 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500">
-                    
+                            
                             ${!match.played ? `
                                 <button onclick="validateMatch(${match.id})" class="ml-2 px-2 py-1 bg-grass-500 text-white text-xs font-bold rounded-lg hover:bg-grass-600 transition-colors">
                                     Valider
@@ -890,7 +890,7 @@
                         </div>
                     `;
                 }
-
+        
                 courtHtml += `</div>`;
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
