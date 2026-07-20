@@ -1138,9 +1138,9 @@
                 else if (slide.type === 'match') {
                     const m = slide.data;
                     
-                    // Gestion propre du 0 et du null/undefined
-                    const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
-                    const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
+                    // CORRECTION ZÉRO : On vérifie si la valeur est un nombre (0 inclus)
+                    const scoreA = (typeof m.scoreA === 'number' && !isNaN(m.scoreA)) ? m.scoreA : (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "" ? m.scoreA : '-');
+                    const scoreB = (typeof m.scoreB === 'number' && !isNaN(m.scoreB)) ? m.scoreB : (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "" ? m.scoreB : '-');
         
                     container.innerHTML = `
                         <div class="text-center flex flex-col justify-between h-full space-y-8">
@@ -1148,16 +1148,20 @@
                                  TERRAIN ${m.court > 0 ? m.court : 'Attente'}
                             </div>
                             
-                            <!-- CORRECTION : Ajout du score B et rééquilibrage de l'affichage -->
+                            <!-- AFFICHAGE DES DEUX SCORES -->
                             <div class="grid grid-cols-1 md:grid-cols-7 items-center gap-4 py-6">
                                 <div class="md:col-span-2 text-2xl sm:text-4xl font-extrabold truncate text-white px-2 text-right">${m.teamA}</div>
+                                
                                 <div class="md:col-span-1 text-center font-black text-4xl sm:text-5xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
-                                    ${displayScoreA}
+                                    ${scoreA}
                                 </div>
-                                <div class="md:col-span-1 text-center font-normal text-2xl text-gray-500">VS</div>
+                                
+                                <div class="md:col-span-1 text-center font-bold text-xl text-gray-500 uppercase">VS</div>
+                                
                                 <div class="md:col-span-1 text-center font-black text-4xl sm:text-5xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
-                                    ${displayScoreB}
+                                    ${scoreB}
                                 </div>
+                                
                                 <div class="md:col-span-2 text-2xl sm:text-4xl font-extrabold truncate text-white px-2 text-left">${m.teamB}</div>
                             </div>
                             
