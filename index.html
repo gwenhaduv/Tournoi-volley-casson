@@ -695,45 +695,33 @@
 
         // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
         function updateMatchScore(matchId, field, value) {
-            const matchIndex = matches.findIndex(m => m.id === matchId);
-            if (matchIndex === -1) return;
+            const match = matches.find(m => m.id === matchId);
+            if (match) {
+                // Mise à jour locale immédiate
+                match[field] = value === "" ? null : parseInt(value, 10);
+                
+                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
+                    match.played = true;
+                } else {
+                    match.played = false;
+                }
         
-            matches[matchIndex][field] = value.trim() !== "" ? parseInt(value, 10) : null;
-            const m = matches[matchIndex];
-        
-            // Sauvegarde immédiate dans Firebase
-            if (typeof dbRef !== 'undefined') {
-                dbRef.child('matches').child(matchId).set(m);
-            } else if (typeof firebase !== 'undefined') {
-                firebase.database().ref('matches/' + matchId).set(m);
-            }
+                // 1. Sauvegarde dans Firebase ou LocalStorage
+                if (isFirebaseActive && dbRef) {
+                    const state = { teams, currentRound, tournamentActive, matches, courtsCount };
+                    dbRef.set(state); // Envoi direct sans passer par saveState() pour éviter les boucles
+                } else {
+                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+                }
         
                 // 2. Mise à jour immédiate des autres écrans (sans toucher aux inputs du terrain actuel)
                 renderPublicUI();
                 renderStandingsTable('standings-body');
                 buildTvSlides();
                 renderTvSlide();
-            
-        }
-
-        // 2. NOUVELLE FONCTION : Clôture définitivement le match au clic sur le bouton
-        function validateMatchScore(matchId) {
-            const matchIndex = matches.findIndex(m => m.id === matchId);
-            if (matchIndex === -1) return;
-        
-            const m = matches[matchIndex];
-        
-            // On passe le match à terminé
-            m.played = true;
-        
-            // Sauvegarde finale dans Firebase
-            if (typeof dbRef !== 'undefined') {
-                dbRef.child('matches').child(matchId).set(m);
-            } else if (typeof firebase !== 'undefined') {
-                firebase.database().ref('matches/' + matchId).set(m);
             }
         }
-        
+
         // --- CALCUL DU CLASSEMENT UNIFORMISÉ ---
         function computeStandings() {
             let table = {};
@@ -854,17 +842,13 @@
                 `;
         
                 if (match) {
-                    // Gestion auto-arbitrage
+                    // CORRECTION AUTO-ARBITRAGE : Si aucune équipe n'est disponible au repos, on passe en auto-arbitrage
                     let refereeName;
                     if (availableReferees.length === 0) {
-                        refereeName = `Auto (${match.teamA})`;
+                        refereeName = `Auto-arbitage`;
                     } else {
                         refereeName = availableReferees[(i - 1) % availableReferees.length];
                     }
-        
-                    // Vérification si les deux scores sont saisis pour afficher le bouton
-                    const scoresFilled = match.scoreA !== null && match.scoreA !== undefined && match.scoreA !== "" &&
-                                         match.scoreB !== null && match.scoreB !== undefined && match.scoreB !== "";
         
                     courtHtml += `
                         <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
@@ -877,22 +861,11 @@
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
                             <input type="number" min="0" id="input-scoreA-${match.id}" value="${match.scoreA ?? ''}" placeholder="0" 
                                 oninput="updateMatchScore(${match.id}, 'scoreA', this.value)"
-                                ${match.played ? 'disabled' : ''}
-                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50 disabled:opacity-60">
+                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                             <span class="text-gray-400 font-bold">-</span>
                             <input type="number" min="0" id="input-scoreB-${match.id}" value="${match.scoreB ?? ''}" placeholder="0" 
                                 oninput="updateMatchScore(${match.id}, 'scoreB', this.value)"
-                                ${match.played ? 'disabled' : ''}
-                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50 disabled:opacity-60">
-                        </div>
-                        
-                        <!-- BOUTON DE VALIDATION DYNAMIQUE -->
-                        <div class="mt-3 text-center h-8 flex items-center justify-center">
-                            ${scoresFilled && !match.played ? `
-                                <button onclick="validateMatchScore(${match.id})" class="w-full bg-grass-600 hover:bg-grass-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow transition duration-150">
-                                    <i class="fa-solid fa-check mr-1"></i> Valider le score
-                                </button>
-                            ` : ''}
+                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                         </div>
                     `;
                 } else {
