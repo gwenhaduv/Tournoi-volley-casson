@@ -485,9 +485,11 @@
         ];
 
         function openInNewTab(view) {
-            saveState();
             const cleanUrl = window.location.origin + window.location.pathname;
-            window.open(`${cleanUrl}?view=${view}`, '_blank');
+            // Ajoute dynamiquement le bon paramètre (?view=results, ?view=tv, etc.)
+            const targetUrl = `${cleanUrl}?view=${view}`;
+            
+            window.open(targetUrl, '_blank');
         }
 
         function navigateToView(view) {
