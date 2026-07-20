@@ -467,18 +467,45 @@
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
             
-            if (view === 'results') {
+            // Met à jour l'URL proprement sans recharger la page
+            const cleanUrl = window.location.origin + window.location.pathname;
+            if (view === 'admin') {
+                window.history.pushState({view: 'admin'}, '', cleanUrl);
+                document.getElementById('view-admin').className = 'block';
+                updateUI();
+            } else if (view === 'results') {
+                window.history.pushState({view: 'results'}, '', `${cleanUrl}?view=results`);
                 document.getElementById('view-public').className = 'block';
                 renderPublicUI();
             } else if (view === 'tv') {
+                window.history.pushState({view: 'tv'}, '', `${cleanUrl}?view=tv`);
+                document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
+                startTvCarousel();
+            }
+        }
+
+        window.addEventListener('popstate', (event) => {
+            const params = new URLSearchParams(window.location.search);
+            const viewParam = params.get('view');
+            
+            if (tvInterval) { clearInterval(tvInterval); tvInterval = null; }
+            
+            document.getElementById('view-admin').className = 'hidden';
+            document.getElementById('view-public').className = 'hidden';
+            document.getElementById('view-tv').className = 'hidden';
+
+            if (viewParam === 'results') {
+                document.getElementById('view-public').className = 'block';
+                renderPublicUI();
+            } else if (viewParam === 'tv') {
                 document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
                 startTvCarousel();
             } else {
                 document.getElementById('view-admin').className = 'block';
                 updateUI();
             }
-        }
-
+        });
+        
         window.addEventListener('DOMContentLoaded', () => {
             if (!isFirebaseActive) {
                 const saved = localStorage.getItem('volley_tournament_state');
