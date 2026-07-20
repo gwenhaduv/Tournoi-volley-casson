@@ -405,28 +405,13 @@
                         } else { teams = []; }
                         
                         if (state.matches) {
-                            const incomingMatches = Array.isArray(state.matches) ? state.matches.filter(Boolean) : Object.values(state.matches);
-                            
-                            // On met à jour les matchs, MAIS on ne touche pas aux scores du match en cours de saisie
-                            matches = incomingMatches.map(incomingMatch => {
-                                const activeInput = document.activeElement;
-                                if (activeInput && activeInput.id.startsWith('input-score-')) {
-                                    const activeMatchId = parseInt(activeInput.id.split('-').pop(), 10);
-                                    // Si c'est le match que l'admin est en train de modifier, on garde nos valeurs locales temporairement
-                                    if (incomingMatch.id === activeMatchId) {
-                                        const currentLocalMatch = matches.find(m => m.id === activeMatchId);
-                                        if (currentLocalMatch) {
-                                            incomingMatch.scoreA = currentLocalMatch.scoreA;
-                                            incomingMatch.scoreB = currentLocalMatch.scoreB;
-                                            incomingMatch.played = currentLocalMatch.played;
-                                        }
-                                    }
-                                }
-                                return incomingMatch;
-                            });
-                        } else { 
-                            matches = []; 
-                        }
+                            matches = Array.isArray(state.matches) ? state.matches.filter(Boolean) : Object.values(state.matches);
+                        } else { matches = []; }
+        
+                        currentRound = state.currentRound || 1;
+                        tournamentActive = state.tournamentActive || false;
+                        courtsCount = state.courtsCount || 1;
+                    }
         
                     const inputElement = document.getElementById('courts-count-input');
                     if (inputElement) {
@@ -434,24 +419,23 @@
                         inputElement.disabled = tournamentActive;
                     }
         
-                    // Mises à jour globales et immédiates pour l'écran public et la TV (ne touchent pas aux inputs de l'admin)
+                    // --- CORRECTIF DE SYNCHRONISATION ---
+                    // On met à jour les classements et l'écran public
                     renderPublicUI();
-                    renderStandingsTable('public-standings-body');
+                    renderStandingsTable('standings-body');
                     buildTvSlides();
                     renderTvSlide();
         
-                    // Pour l'interface ADMIN : on ne rafraîchit les structures des terrains QUE si on n'est pas en train d'écrire
+                    // On ne reconstruit les terrains QUE si l'utilisateur n'est pas en train de taper dedans
                     if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
                         updateUI(); 
-                    } else {
-                        // Si l'admin écrit, on met à jour uniquement le classement de sa colonne latérale sans toucher à ses inputs
-                        renderStandingsTable('standings-body');
                     }
                 } catch (error) {
                     console.error("Erreur de synchronisation Firebase :", error);
                 }
             });
-        }
+        }       
+
         function refreshActiveView() {
             updateUI();
             renderPublicUI();
@@ -659,55 +643,34 @@
         }
 
         // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
-        function updateMatchScoreLive(matchId, field, value) {
+        function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Force le typage correct : nombre, ou null si vide
+                // Mise à jour locale immédiate
                 match[field] = value === "" ? null : parseInt(value, 10);
+                
+                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
+                    match.played = true;
+                } else {
+                    match.played = false;
+                }
         
-                // On force la mise à jour visuelle immédiate en local (Écran Public / TV)
+                // 1. Sauvegarde dans Firebase ou LocalStorage
+                if (isFirebaseActive && dbRef) {
+                    const state = { teams, currentRound, tournamentActive, matches, courtsCount };
+                    dbRef.set(state); // Envoi direct sans passer par saveState() pour éviter les boucles
+                } else {
+                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+                }
+        
+                // 2. Mise à jour immédiate des autres écrans (sans toucher aux inputs du terrain actuel)
                 renderPublicUI();
                 renderStandingsTable('standings-body');
                 buildTvSlides();
                 renderTvSlide();
-        
-                // Envoi immédiat et propre à Firebase
-                if (isFirebaseActive && dbRef) {
-                    // JSON.parse(JSON.stringify(...)) élimine les variables intermédiaires corrompues
-                    const cleanMatches = JSON.parse(JSON.stringify(matches));
-                    dbRef.child('matches').set(cleanMatches).catch(err => {
-                        console.error("Firebase a refusé la mise à jour du score :", err);
-                    });
-                } else {
-                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
-                }
             }
         }
 
-        function validateMatchScore(matchId) {
-            const match = matches.find(m => m.id === matchId);
-            if (match) {
-                // CORRECTION ICI : Utilisation de 'match' au lieu de 'm'
-                const hasScoreA = match.scoreA !== null && match.scoreA !== undefined && match.scoreA !== "";
-                const hasScoreB = match.scoreB !== null && match.scoreB !== undefined && match.scoreB !== "";
-        
-                if (hasScoreA && hasScoreB) {
-                    match.played = true;
-        
-                    // Sauvegarde globale immédiate dans Firebase ou LocalStorage
-                    if (isFirebaseActive && dbRef) {
-                        const state = { teams, currentRound, tournamentActive, matches, courtsCount };
-                        dbRef.set(state);
-                    } else {
-                        localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
-                        refreshActiveView();
-                    }
-                } else {
-                    alert("Veuillez saisir le score des deux équipes (0 est accepté) avant de valider le match.");
-                }
-            }
-        }
-        
         // --- CALCUL DU CLASSEMENT UNIFORMISÉ ---
         function computeStandings() {
             let table = {};
@@ -816,23 +779,12 @@
                         </div>
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
                             <input type="number" min="0" id="input-scoreA-${match.id}" value="${match.scoreA ?? ''}" placeholder="0" 
-                                oninput="updateMatchScoreLive(${match.id}, 'scoreA', this.value)"
+                                oninput="updateMatchScore(${match.id}, 'scoreA', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                             <span class="text-gray-400 font-bold">-</span>
                             <input type="number" min="0" id="input-scoreB-${match.id}" value="${match.scoreB ?? ''}" placeholder="0" 
-                                oninput="updateMatchScoreLive(${match.id}, 'scoreB', this.value)"
+                                oninput="updateMatchScore(${match.id}, 'scoreB', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
-                        </div>
-                        
-                        <!-- AJOUT DU BOUTON DE VALIDATION CI-DESSOUS -->
-                        <div class="mt-2 flex justify-center">
-                            ${match.played ? 
-                                `<span class="text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">✓ Match validé</span>` : 
-                                `<button onclick="validateMatchScore(${match.id})" 
-                                    class="text-xs bg-grass-600 hover:bg-grass-700 text-white font-medium px-3 py-1 rounded-lg transition-colors shadow-sm">
-                                    Valider le résultat
-                                 </button>`
-                            }
                         </div>
                     `;
                 } else {
