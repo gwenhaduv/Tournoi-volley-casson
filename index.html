@@ -644,21 +644,26 @@
         }
 
         // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
-        function updateMatchScore(matchId, field, value) {
+        function updateMatchScoreLiveLive(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Mise à jour locale immédiate du score
+                // 1. On applique TOUT DE SUITE le changement dans notre tableau local
                 match[field] = value === "" ? null : parseInt(value, 10);
         
-                // Sauvegarde et envoi direct à Firebase/LocalStorage
+                // 2. On force l'envoi immédiat du tableau mis à jour à Firebase
                 if (isFirebaseActive && dbRef) {
-                    const state = { teams, currentRound, tournamentActive, matches, courtsCount };
-                    dbRef.set(state);
+                    dbRef.set({ 
+                        teams: teams, 
+                        currentRound: currentRound, 
+                        tournamentActive: tournamentActive, 
+                        matches: matches, // Contient maintenant le nouveau point
+                        courtsCount: courtsCount 
+                    });
                 } else {
                     localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
                 }
         
-                // 2. Mise à jour immédiate des autres écrans (sans toucher aux inputs du terrain actuel)
+                // 3. On force la mise à jour visuelle immédiate des autres écrans
                 renderPublicUI();
                 renderStandingsTable('standings-body');
                 buildTvSlides();
@@ -669,14 +674,14 @@
         function validateMatchScore(matchId) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Vérification stricte : on accepte 0, mais pas null, undefined ou une chaîne vide
-                const hasScoreA = m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "";
-                const hasScoreB = m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "";
+                // CORRECTION ICI : Utilisation de 'match' au lieu de 'm'
+                const hasScoreA = match.scoreA !== null && match.scoreA !== undefined && match.scoreA !== "";
+                const hasScoreB = match.scoreB !== null && match.scoreB !== undefined && match.scoreB !== "";
         
                 if (hasScoreA && hasScoreB) {
                     match.played = true;
         
-                    // Sauvegarde globale immédiate
+                    // Sauvegarde globale immédiate dans Firebase ou LocalStorage
                     if (isFirebaseActive && dbRef) {
                         const state = { teams, currentRound, tournamentActive, matches, courtsCount };
                         dbRef.set(state);
