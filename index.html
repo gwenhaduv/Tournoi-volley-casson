@@ -845,7 +845,7 @@
                     // CORRECTION AUTO-ARBITRAGE : Si aucune équipe n'est disponible au repos, on passe en auto-arbitrage
                     let refereeName;
                     if (availableReferees.length === 0) {
-                        refereeName = `Auto (${match.teamA})`;
+                        refereeName = `Auto-arbitage`;
                     } else {
                         refereeName = availableReferees[(i - 1) % availableReferees.length];
                     }
@@ -943,7 +943,7 @@
                     // CORRECTION AUTO-ARBITRAGE : Si pas d'arbitre disponible au repos
                     let refereeName;
                     if (availableReferees.length === 0) {
-                        refereeName = `Auto (${m.teamA})`;
+                        refereeName = `Auto-arbitrage`;
                     } else {
                         refereeName = availableReferees[(c - 1) % availableReferees.length];
                     }
