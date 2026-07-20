@@ -419,23 +419,24 @@
                         inputElement.disabled = tournamentActive;
                     }
         
-                    // --- CORRECTIF DE SYNCHRONISATION ---
-                    // On met à jour les classements et l'écran public
+                    // Mises à jour globales et immédiates pour l'écran public et la TV (ne touchent pas aux inputs de l'admin)
                     renderPublicUI();
-                    renderStandingsTable('standings-body');
+                    renderStandingsTable('public-standings-body');
                     buildTvSlides();
                     renderTvSlide();
         
-                    // On ne reconstruit les terrains QUE si l'utilisateur n'est pas en train de taper dedans
+                    // Pour l'interface ADMIN : on ne rafraîchit les structures des terrains QUE si on n'est pas en train d'écrire
                     if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
                         updateUI(); 
+                    } else {
+                        // Si l'admin écrit, on met à jour uniquement le classement de sa colonne latérale sans toucher à ses inputs
+                        renderStandingsTable('standings-body');
                     }
                 } catch (error) {
                     console.error("Erreur de synchronisation Firebase :", error);
                 }
             });
-        }       
-
+        }
         function refreshActiveView() {
             updateUI();
             renderPublicUI();
@@ -668,21 +669,23 @@
         function validateMatchScore(matchId) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // On vérifie que les deux scores sont bien saisis avant de valider
-                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
+                // Vérification stricte : on accepte 0, mais pas null, undefined ou une chaîne vide
+                const hasScoreA = m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "";
+                const hasScoreB = m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "";
+        
+                if (hasScoreA && hasScoreB) {
                     match.played = true;
         
-                    // Sauvegarde de l'état validé
+                    // Sauvegarde globale immédiate
                     if (isFirebaseActive && dbRef) {
-                        dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
+                        const state = { teams, currentRound, tournamentActive, matches, courtsCount };
+                        dbRef.set(state);
                     } else {
                         localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+                        refreshActiveView();
                     }
-        
-                    // Rafraîchissement complet de l'interface de gestion
-                    updateUI(); 
                 } else {
-                    alert("Veuillez saisir le score des deux équipes avant de valider le match.");
+                    alert("Veuillez saisir le score des deux équipes (0 est accepté) avant de valider le match.");
                 }
             }
         }
