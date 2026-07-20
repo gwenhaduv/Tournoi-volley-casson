@@ -635,26 +635,42 @@
             // 1. Récupérer tous les matchs de la ronde actuelle
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             
-            // 2. CORRECTION : Vérifier que chaque match est soit un exempt (isBye), 
-            // soit possède des scores numériques bien saisis (le chiffre 0 est ainsi accepté)
-            const allScoresEntered = currentRoundMatches.every(m => 
-                m.isBye || (typeof m.scoreA === 'number' && !isNaN(m.scoreA) &&
-                            typeof m.scoreB === 'number' && !isNaN(m.scoreB))
-            );
+            // LOG DE DIAGNOSTIC : Inspecte ce que le code voit réellement dans la console (F12)
+            console.log("Matchs de la ronde actuelle analysés :", currentRoundMatches);
+        
+            // 2. Vérification ultra-souple mais sécurisée
+            const allScoresEntered = currentRoundMatches.every(m => {
+                if (m.isBye) return true;
+        
+                // On nettoie et on teste si la valeur convertie est un nombre valide
+                const scoreAValid = m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "" && !isNaN(parseInt(m.scoreA, 10));
+                const scoreBValid = m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "" && !isNaN(parseInt(m.scoreB, 10));
+        
+                return scoreAValid && scoreBValid;
+            });
         
             if (!allScoresEntered) {
                 alert("Vous devez valider tous les scores de la ronde actuelle avant de passer à la suivante !");
                 return;
             }
         
-            // 3. Clôture officielle de tous les matchs de cette ronde avant de basculer
+            // 3. Forcer la conversion en nombres et le statut 'played' avant de changer de ronde
             currentRoundMatches.forEach(m => {
                 if (!m.isBye) {
+                    m.scoreA = parseInt(m.scoreA, 10);
+                    m.scoreB = parseInt(m.scoreB, 10);
                     m.played = true;
                 }
             });
         
-            // 4. Passage à la ronde suivante
+            // 4. Sauvegarde immédiate de l'état final de la ronde dans Firebase / LocalStorage
+            if (isFirebaseActive && dbRef) {
+                dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
+            } else {
+                localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+            }
+        
+            // 5. Passage à la ronde suivante
             currentRound++;
             generateRound();
         }
