@@ -405,13 +405,28 @@
                         } else { teams = []; }
                         
                         if (state.matches) {
-                            matches = Array.isArray(state.matches) ? state.matches.filter(Boolean) : Object.values(state.matches);
-                        } else { matches = []; }
-        
-                        currentRound = state.currentRound || 1;
-                        tournamentActive = state.tournamentActive || false;
-                        courtsCount = state.courtsCount || 1;
-                    }
+                            const incomingMatches = Array.isArray(state.matches) ? state.matches.filter(Boolean) : Object.values(state.matches);
+                            
+                            // On met à jour les matchs, MAIS on ne touche pas aux scores du match en cours de saisie
+                            matches = incomingMatches.map(incomingMatch => {
+                                const activeInput = document.activeElement;
+                                if (activeInput && activeInput.id.startsWith('input-score-')) {
+                                    const activeMatchId = parseInt(activeInput.id.split('-').pop(), 10);
+                                    // Si c'est le match que l'admin est en train de modifier, on garde nos valeurs locales temporairement
+                                    if (incomingMatch.id === activeMatchId) {
+                                        const currentLocalMatch = matches.find(m => m.id === activeMatchId);
+                                        if (currentLocalMatch) {
+                                            incomingMatch.scoreA = currentLocalMatch.scoreA;
+                                            incomingMatch.scoreB = currentLocalMatch.scoreB;
+                                            incomingMatch.played = currentLocalMatch.played;
+                                        }
+                                    }
+                                }
+                                return incomingMatch;
+                            });
+                        } else { 
+                            matches = []; 
+                        }
         
                     const inputElement = document.getElementById('courts-count-input');
                     if (inputElement) {
@@ -644,30 +659,28 @@
         }
 
         // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
-        function updateMatchScoreLiveLive(matchId, field, value) {
+        function updateMatchScoreLive(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // 1. On applique TOUT DE SUITE le changement dans notre tableau local
+                // Force le typage correct : nombre, ou null si vide
                 match[field] = value === "" ? null : parseInt(value, 10);
         
-                // 2. On force l'envoi immédiat du tableau mis à jour à Firebase
-                if (isFirebaseActive && dbRef) {
-                    dbRef.set({ 
-                        teams: teams, 
-                        currentRound: currentRound, 
-                        tournamentActive: tournamentActive, 
-                        matches: matches, // Contient maintenant le nouveau point
-                        courtsCount: courtsCount 
-                    });
-                } else {
-                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
-                }
-        
-                // 3. On force la mise à jour visuelle immédiate des autres écrans
+                // On force la mise à jour visuelle immédiate en local (Écran Public / TV)
                 renderPublicUI();
                 renderStandingsTable('standings-body');
                 buildTvSlides();
                 renderTvSlide();
+        
+                // Envoi immédiat et propre à Firebase
+                if (isFirebaseActive && dbRef) {
+                    // JSON.parse(JSON.stringify(...)) élimine les variables intermédiaires corrompues
+                    const cleanMatches = JSON.parse(JSON.stringify(matches));
+                    dbRef.child('matches').set(cleanMatches).catch(err => {
+                        console.error("Firebase a refusé la mise à jour du score :", err);
+                    });
+                } else {
+                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+                }
             }
         }
 
