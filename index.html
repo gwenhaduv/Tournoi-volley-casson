@@ -75,6 +75,9 @@
                     <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                         <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV Défilant (1 par 1) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
+                    <button onclick="navigateToView('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition duration-200 flex items-center gap-2">
+                        <i class="fa-solid fa-history"></i> Historique des Résultats
+                    </button>
                 </div>
             </div>
         </header>
@@ -349,7 +352,33 @@
             <div id="tv-bullets" class="flex gap-1.5"></div>
         </div>
     </div>
-
+    
+    <!-- ========================================== -->
+    <!-- ÉCRAN 4 : HISTORIQUE DES RÉSULTATS (PUBLIC / ADMIN) -->
+    <!-- ========================================== -->
+    <div id="view-history" class="hidden min-h-screen bg-gray-50 p-4 md:p-6 font-sans">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- En-tête avec bouton retour -->
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="navigateToView('admin')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-xl transition duration-150 flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Retour à la gestion
+                </button>
+                <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight uppercase">
+                    <i class="fa-solid fa-history text-blue-600 mr-2"></i> Historique des Matchs
+                </h1>
+            </div>
+    
+            <!-- Conteneur principal de l'historique -->
+            <div class="bg-white rounded-2xl shadow-md border border-gray-150 p-6">
+                <div id="history-page-container" class="space-y-6">
+                    <!-- Rempli dynamiquement en JS -->
+                    <p class="text-gray-400 italic text-center py-8">Aucun match terminé pour le moment.</p>
+                </div>
+            </div>
+    
+        </div>
+    </div>
 
     <!-- App Logic Script -->
     <script>
@@ -425,6 +454,7 @@
                     renderStandingsTable('standings-body');
                     buildTvSlides();
                     renderTvSlide();
+                    renderHistoryPage();
         
                     // On ne reconstruit les terrains QUE si l'utilisateur n'est pas en train de taper dedans
                     if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
@@ -462,13 +492,14 @@
 
         function navigateToView(view) {
             if (tvInterval) { clearInterval(tvInterval); tvInterval = null; }
-
+        
             document.getElementById('view-admin').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
+            document.getElementById('view-history').className = 'hidden'; // Cache le nouvel écran
             
-            // Met à jour l'URL proprement sans recharger la page
             const cleanUrl = window.location.origin + window.location.pathname;
+            
             if (view === 'admin') {
                 window.history.pushState({view: 'admin'}, '', cleanUrl);
                 document.getElementById('view-admin').className = 'block';
@@ -481,9 +512,14 @@
                 window.history.pushState({view: 'tv'}, '', `${cleanUrl}?view=tv`);
                 document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
                 startTvCarousel();
+            } else if (view === 'history') { // Gère la navigation vers l'historique
+                window.history.pushState({view: 'history'}, '', `${cleanUrl}?view=history`);
+                document.getElementById('view-history').className = 'block';
+                renderHistoryPage();
             }
         }
-
+        
+        // Gestion des boutons Précédent / Suivant du navigateur
         window.addEventListener('popstate', (event) => {
             const params = new URLSearchParams(window.location.search);
             const viewParam = params.get('view');
@@ -493,36 +529,21 @@
             document.getElementById('view-admin').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
-
+            document.getElementById('view-history').className = 'hidden';
+        
             if (viewParam === 'results') {
                 document.getElementById('view-public').className = 'block';
                 renderPublicUI();
             } else if (viewParam === 'tv') {
                 document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
                 startTvCarousel();
+            } else if (viewParam === 'history') {
+                document.getElementById('view-history').className = 'block';
+                renderHistoryPage();
             } else {
                 document.getElementById('view-admin').className = 'block';
                 updateUI();
             }
-        });
-        
-        window.addEventListener('DOMContentLoaded', () => {
-            if (!isFirebaseActive) {
-                const saved = localStorage.getItem('volley_tournament_state');
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    teams = state.teams || [];
-                    currentRound = state.currentRound || 1;
-                    tournamentActive = state.tournamentActive || false;
-                    matches = state.matches || [];
-                    courtsCount = state.courtsCount || 1;
-                }
-            }
-            const params = new URLSearchParams(window.location.search);
-            const viewParam = params.get('view');
-            if (viewParam === 'results') { navigateToView('results'); } 
-            else if (viewParam === 'tv') { navigateToView('tv'); } 
-            else { updateUI(); }
         });
 
         function switchTab(type) {
@@ -890,6 +911,59 @@
             grid.innerHTML = html;
         }
 
+        function renderHistoryPage() {
+            const container = document.getElementById('history-page-container');
+            if (!container) return;
+        
+            // Filtre les matchs terminés (en excluant les exempts)
+            const playedMatches = matches.filter(m => m.played && !m.isBye);
+        
+            if (playedMatches.length === 0) {
+                container.innerHTML = `<p class="text-gray-400 italic text-center py-8">Aucun match terminé pour le moment.</p>`;
+                return;
+            }
+        
+            // Regroupement par ronde décroissante
+            const matchesByRound = {};
+            playedMatches.forEach(m => {
+                if (!matchesByRound[m.round]) matchesByRound[m.round] = [];
+                matchesByRound[m.round].push(m);
+            });
+        
+            const sortedRounds = Object.keys(matchesByRound).sort((a, b) => b - a);
+            let html = "";
+        
+            sortedRounds.forEach(round => {
+                html += `
+                    <div class="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                        <h3 class="text-sm font-black text-blue-700 uppercase tracking-wider mb-3 pb-1 border-b border-gray-200">
+                            Ronde ${round}
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                `;
+        
+                matchesByRound[round].forEach(m => {
+                    html += `
+                        <div class="flex justify-between items-center text-sm bg-white px-4 py-3 rounded-lg border border-gray-200 shadow-sm">
+                            <span class="text-xs bg-gray-100 text-gray-500 font-mono px-2 py-0.5 rounded font-bold mr-2">T.${m.court}</span>
+                            <div class="flex-1 flex justify-between items-center gap-3">
+                                <span class="truncate text-right w-[42%] ${m.scoreA > m.scoreB ? 'font-bold text-gray-900' : 'text-gray-500'}">${m.teamA}</span>
+                                <span class="font-mono bg-blue-50 text-blue-800 px-3 py-1 rounded-md font-black min-w-[60px] text-center">${m.scoreA} - ${m.scoreB}</span>
+                                <span class="truncate text-left w-[42%] ${m.scoreB > m.scoreA ? 'font-bold text-gray-900' : 'text-gray-500'}">${m.teamB}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+        
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+        
+            container.innerHTML = html;
+        }
+        
         // --- CAROUSEL TV REFAIT ET COMPATIBLE ---
         function startTvCarousel() {
             currentTvIndex = 0;
