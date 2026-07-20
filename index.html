@@ -632,17 +632,36 @@
         }
 
         function nextRound() {
-            // 1. Récupérer tous les matchs de la ronde actuelle
-            const currentRoundMatches = matches.filter(m => m.round === currentRound);
-            
-            // LOG DE DIAGNOSTIC : Inspecte ce que le code voit réellement dans la console (F12)
-            console.log("Matchs de la ronde actuelle analysés :", currentRoundMatches);
+            // 1. Si Firebase est actif, on fait une lecture immédiate et propre de la base
+            if (isFirebaseActive && dbRef) {
+                dbRef.once('value').then(snapshot => {
+                    const data = snapshot.val();
+                    if (data && data.matches) {
+                        // On synchronise de force le tableau local avec les vraies données Firebase
+                        matches = data.matches;
+                        verifierEtPasserALaRondeSuivante();
+                    } else {
+                        // Sécurité si pas de données
+                        verifierEtPasserALaRondeSuivante();
+                    }
+                }).catch(err => {
+                    console.error("Erreur de lecture Firebase:", err);
+                    verifierEtPasserALaRondeSuivante();
+                });
+            } else {
+                // Mode LocalStorage standard
+                verifierEtPasserALaRondeSuivante();
+            }
+        }
         
-            // 2. Vérification ultra-souple mais sécurisée
+        // Découpage de la logique de vérification pour la rendre infaillible
+        function verifierEtPasserALaRondeSuivante() {
+            const currentRoundMatches = matches.filter(m => m.round === currentRound);
+        
+            // Vérification ultra-souple : accepte 0, accepte les chaînes "0", rejette le vide/null
             const allScoresEntered = currentRoundMatches.every(m => {
                 if (m.isBye) return true;
         
-                // On nettoie et on teste si la valeur convertie est un nombre valide
                 const scoreAValid = m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "" && !isNaN(parseInt(m.scoreA, 10));
                 const scoreBValid = m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "" && !isNaN(parseInt(m.scoreB, 10));
         
@@ -654,23 +673,23 @@
                 return;
             }
         
-            // 3. Forcer la conversion en nombres et le statut 'played' avant de changer de ronde
+            // Convertir proprement en nombres et clore la ronde
             currentRoundMatches.forEach(m => {
                 if (!m.isBye) {
                     m.scoreA = parseInt(m.scoreA, 10);
                     m.scoreB = parseInt(m.scoreB, 10);
-                    m.played = true;
+                    m.played = true; // Devient 'true' uniquement ICI, au changement de ronde
                 }
             });
         
-            // 4. Sauvegarde immédiate de l'état final de la ronde dans Firebase / LocalStorage
+            // Sauvegarde finale de la ronde terminée
             if (isFirebaseActive && dbRef) {
                 dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
             } else {
                 localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
             }
         
-            // 5. Passage à la ronde suivante
+            // Passage à la ronde suivante
             currentRound++;
             generateRound();
         }
