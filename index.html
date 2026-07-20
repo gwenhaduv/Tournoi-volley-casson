@@ -285,7 +285,7 @@
                 <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <i class="fa-solid fa-table-tennis-paddle-ball text-grass-600"></i> Matchs de la Ronde en Cours
+                            <i class="fa-solid fa-circle-play text-grass-600"></i> Matchs de la Ronde en Cours
                         </h2>
                         <span id="public-round-label" class="bg-grass-700 text-white text-xs font-bold px-3 py-1 rounded-lg">Ronde -</span>
                     </div>
@@ -806,9 +806,20 @@
             const courtsGrid = document.getElementById('courts-grid');
             if (!courtsGrid || !tournamentActive) return;
         
+        
             courtsGrid.innerHTML = '';
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
-
+        
+            // --- CALCUL DES ARBITRES POUR LA RONDE EN COURS ---
+            const activeTeamsInRound = new Set();
+            currentRoundMatches.forEach(m => {
+                if (!m.isBye) {
+                    activeTeamsInRound.add(m.teamA);
+                    activeTeamsInRound.add(m.teamB);
+                }
+            });
+            const availableReferees = teams.filter(t => !activeTeamsInRound.has(t));
+        
             for (let i = 1; i <= courtsCount; i++) {
                 const match = currentRoundMatches.find(m => m.court === i);
                 let courtHtml = `
@@ -821,8 +832,18 @@
                         </div>
                 `;
         
+        
                 if (match) {
+                    // Attribution de l'arbitre de la ronde
+                    let refereeName = "Non assigné";
+                    if (availableReferees.length > 0) {
+                        refereeName = availableReferees[(i - 1) % availableReferees.length];
+                    }
+        
                     courtHtml += `
+                        <!-- Affichage de l'arbitre sous le numéro de terrain -->
+                        <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
+                        
                         <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
                             <span class="truncate w-[42%] text-right">${match.teamA}</span>
                             <span class="text-xs text-gray-300 font-normal px-1">VS</span>
@@ -882,7 +903,16 @@
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             let html = "";
         
-            // Utilise le nombre de terrains configuré (courtsCount), avec un minimum de 1 terrain par défaut
+            // --- CALCUL DES ARBITRES POUR LA RONDE EN COURS ---
+            const activeTeamsInRound = new Set();
+            currentRoundMatches.forEach(m => {
+                if (!m.isBye) {
+                    activeTeamsInRound.add(m.teamA);
+                    activeTeamsInRound.add(m.teamB);
+                }
+            });
+            const availableReferees = teams.filter(t => !activeTeamsInRound.has(t));
+        
             const totalCourtsToShow = Math.max(1, courtsCount || 1);
         
             for (let c = 1; c <= totalCourtsToShow; c++) {
@@ -891,10 +921,16 @@
                     const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
                     const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
+                    let refereeName = "Non assigné";
+                    if (availableReferees.length > 0) {
+                        refereeName = availableReferees[(c - 1) % availableReferees.length];
+                    }
+        
                     html += `
                         <div class="border border-gray-100 rounded-xl p-4 bg-gray-50 flex flex-col justify-between shadow-inner">
                             <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex justify-between items-center">
                                 <span class="bg-grass-600 text-white px-2 py-0.5 rounded font-black">TERRAIN ${c}</span>
+                                <span class="italic text-gray-500 text-[11px]"><i class="fa-solid fa-whistle text-grass-600 mr-0.5"></i> Arb : <strong class="text-gray-700">${refereeName}</strong></span>
                             </div>
                             <div class="space-y-1">
                                 <div class="flex justify-between items-center text-sm">
