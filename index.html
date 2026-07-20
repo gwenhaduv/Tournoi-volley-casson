@@ -646,19 +646,13 @@
         function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Mise à jour locale immédiate
+                // Mise à jour locale immédiate du score
                 match[field] = value === "" ? null : parseInt(value, 10);
-                
-                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
-                    match.played = true;
-                } else {
-                    match.played = false;
-                }
         
-                // 1. Sauvegarde dans Firebase ou LocalStorage
+                // Sauvegarde et envoi direct à Firebase/LocalStorage
                 if (isFirebaseActive && dbRef) {
                     const state = { teams, currentRound, tournamentActive, matches, courtsCount };
-                    dbRef.set(state); // Envoi direct sans passer par saveState() pour éviter les boucles
+                    dbRef.set(state);
                 } else {
                     localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
                 }
@@ -671,6 +665,28 @@
             }
         }
 
+        function validateMatchScore(matchId) {
+            const match = matches.find(m => m.id === matchId);
+            if (match) {
+                // On vérifie que les deux scores sont bien saisis avant de valider
+                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
+                    match.played = true;
+        
+                    // Sauvegarde de l'état validé
+                    if (isFirebaseActive && dbRef) {
+                        dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
+                    } else {
+                        localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+                    }
+        
+                    // Rafraîchissement complet de l'interface de gestion
+                    updateUI(); 
+                } else {
+                    alert("Veuillez saisir le score des deux équipes avant de valider le match.");
+                }
+            }
+        }
+        
         // --- CALCUL DU CLASSEMENT UNIFORMISÉ ---
         function computeStandings() {
             let table = {};
@@ -779,12 +795,23 @@
                         </div>
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
                             <input type="number" min="0" id="input-scoreA-${match.id}" value="${match.scoreA ?? ''}" placeholder="0" 
-                                oninput="updateMatchScore(${match.id}, 'scoreA', this.value)"
+                                oninput="updateMatchScoreLive(${match.id}, 'scoreA', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                             <span class="text-gray-400 font-bold">-</span>
                             <input type="number" min="0" id="input-scoreB-${match.id}" value="${match.scoreB ?? ''}" placeholder="0" 
-                                oninput="updateMatchScore(${match.id}, 'scoreB', this.value)"
+                                oninput="updateMatchScoreLive(${match.id}, 'scoreB', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
+                        </div>
+                        
+                        <!-- AJOUT DU BOUTON DE VALIDATION CI-DESSOUS -->
+                        <div class="mt-2 flex justify-center">
+                            ${match.played ? 
+                                `<span class="text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">✓ Match validé</span>` : 
+                                `<button onclick="validateMatchScore(${match.id})" 
+                                    class="text-xs bg-grass-600 hover:bg-grass-700 text-white font-medium px-3 py-1 rounded-lg transition-colors shadow-sm">
+                                    Valider le résultat
+                                 </button>`
+                            }
                         </div>
                     `;
                 } else {
