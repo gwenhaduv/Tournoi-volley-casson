@@ -809,7 +809,7 @@
             courtsGrid.innerHTML = '';
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
         
-            // --- SÉCURITÉ : EXTRACTION DIRECTE DE TOUTES LES ÉQUIPES DU TOURNOI ---
+            // 1. Extraction de toutes les équipes présentes
             const allTeamsSet = new Set();
             matches.forEach(m => {
                 if (m.teamA) allTeamsSet.add(m.teamA);
@@ -817,17 +817,17 @@
             });
             const allTournamentTeams = Array.from(allTeamsSet);
         
-            // --- CALCUL DES ÉQUIPES COMPTÉES COMME ACTIVES DANS CETTE RONDE ---
+            // 2. Identification des équipes qui jouent sur un terrain actif
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
-                if (!m.isBye) {
+                if (!m.isBye && m.court >= 1 && m.court <= courtsCount) {
                     activeTeamsInRound.add(m.teamA);
                     activeTeamsInRound.add(m.teamB);
                 }
             });
         
-            // Les arbitres disponibles sont ceux qui ne jouent pas sur cette ronde
-            const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
+            // 3. Les arbitres prioritaires sont ceux au repos
+            let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
             for (let i = 1; i <= courtsCount; i++) {
                 const match = currentRoundMatches.find(m => m.court === i);
@@ -842,9 +842,11 @@
                 `;
         
                 if (match) {
-                    // Attribution de l'arbitre avec le modulo
-                    let refereeName = "Exempt / Repos";
-                    if (availableReferees.length > 0) {
+                    // CORRECTION AUTO-ARBITRAGE : Si aucune équipe n'est disponible au repos, on passe en auto-arbitrage
+                    let refereeName;
+                    if (availableReferees.length === 0) {
+                        refereeName = `Auto (${match.teamA})`;
+                    } else {
                         refereeName = availableReferees[(i - 1) % availableReferees.length];
                     }
         
@@ -852,9 +854,9 @@
                         <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
                         
                         <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
-                            <span class="truncate w-[42%] text-right">${match.teamA}</span>
+                            <span class="text-right flex-1">${match.teamA}</span>
                             <span class="text-xs text-gray-300 font-normal px-1">VS</span>
-                            <span class="truncate w-[42%] text-left">${match.teamB}</span>
+                            <span class="text-left flex-1">${match.teamB}</span>
                         </div>
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
                             <input type="number" min="0" id="input-scoreA-${match.id}" value="${match.scoreA ?? ''}" placeholder="0" 
@@ -910,7 +912,7 @@
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             let html = "";
         
-            // --- SÉCURITÉ : EXTRACTION DIRECTE DE TOUTES LES ÉQUIPES DU TOURNOI ---
+            // 1. Extraction de toutes les équipes
             const allTeamsSet = new Set();
             matches.forEach(m => {
                 if (m.teamA) allTeamsSet.add(m.teamA);
@@ -918,15 +920,17 @@
             });
             const allTournamentTeams = Array.from(allTeamsSet);
         
-            // --- CALCUL DES ÉQUIPES ACTIVES DANS CETTE RONDE ---
+            // 2. Identification des équipes en train de jouer sur les terrains 1 à courtsCount
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
-                if (!m.isBye) {
+                if (!m.isBye && m.court >= 1 && m.court <= courtsCount) {
                     activeTeamsInRound.add(m.teamA);
                     activeTeamsInRound.add(m.teamB);
                 }
             });
-            const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
+            
+            // 3. Récupération des équipes au repos
+            let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
             const totalCourtsToShow = Math.max(1, courtsCount || 1);
         
@@ -936,8 +940,11 @@
                     const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
                     const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
-                    let refereeName = "Exempt / Repos";
-                    if (availableReferees.length > 0) {
+                    // CORRECTION AUTO-ARBITRAGE : Si pas d'arbitre disponible au repos
+                    let refereeName;
+                    if (availableReferees.length === 0) {
+                        refereeName = `Auto (${m.teamA})`;
+                    } else {
                         refereeName = availableReferees[(c - 1) % availableReferees.length];
                     }
         
@@ -949,11 +956,11 @@
                             </div>
                             <div class="space-y-1">
                                 <div class="flex justify-between items-center text-sm">
-                                    <span class="font-medium truncate ${m.played && m.scoreA > m.scoreB ? 'text-grass-700 font-bold' : 'text-gray-700'}">${m.teamA}</span>
+                                    <span class="font-medium flex-1 text-gray-700">${m.teamA}</span>
                                     <span class="font-mono font-bold text-gray-900">${displayScoreA}</span>
                                 </div>
                                 <div class="flex justify-between items-center text-sm">
-                                    <span class="font-medium truncate ${m.played && m.scoreB > m.scoreA ? 'text-grass-700 font-bold' : 'text-gray-700'}">${m.teamB}</span>
+                                    <span class="font-medium flex-1 text-gray-700">${m.teamB}</span>
                                     <span class="font-mono font-bold text-gray-900">${displayScoreB}</span>
                                 </div>
                             </div>
