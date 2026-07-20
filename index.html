@@ -806,11 +806,18 @@
             const courtsGrid = document.getElementById('courts-grid');
             if (!courtsGrid || !tournamentActive) return;
         
-        
             courtsGrid.innerHTML = '';
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
         
-            // --- CALCUL DES ARBITRES POUR LA RONDE EN COURS ---
+            // --- SÉCURITÉ : EXTRACTION DIRECTE DE TOUTES LES ÉQUIPES DU TOURNOI ---
+            const allTeamsSet = new Set();
+            matches.forEach(m => {
+                if (m.teamA) allTeamsSet.add(m.teamA);
+                if (m.teamB) allTeamsSet.add(m.teamB);
+            });
+            const allTournamentTeams = Array.from(allTeamsSet);
+        
+            // --- CALCUL DES ÉQUIPES COMPTÉES COMME ACTIVES DANS CETTE RONDE ---
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
                 if (!m.isBye) {
@@ -818,7 +825,9 @@
                     activeTeamsInRound.add(m.teamB);
                 }
             });
-            const availableReferees = teams.filter(t => !activeTeamsInRound.has(t));
+        
+            // Les arbitres disponibles sont ceux qui ne jouent pas sur cette ronde
+            const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
             for (let i = 1; i <= courtsCount; i++) {
                 const match = currentRoundMatches.find(m => m.court === i);
@@ -832,16 +841,14 @@
                         </div>
                 `;
         
-        
                 if (match) {
-                    // Attribution de l'arbitre de la ronde
-                    let refereeName = "Non assigné";
+                    // Attribution de l'arbitre avec le modulo
+                    let refereeName = "Exempt / Repos";
                     if (availableReferees.length > 0) {
                         refereeName = availableReferees[(i - 1) % availableReferees.length];
                     }
         
                     courtHtml += `
-                        <!-- Affichage de l'arbitre sous le numéro de terrain -->
                         <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
                         
                         <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
@@ -903,7 +910,15 @@
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             let html = "";
         
-            // --- CALCUL DES ARBITRES POUR LA RONDE EN COURS ---
+            // --- SÉCURITÉ : EXTRACTION DIRECTE DE TOUTES LES ÉQUIPES DU TOURNOI ---
+            const allTeamsSet = new Set();
+            matches.forEach(m => {
+                if (m.teamA) allTeamsSet.add(m.teamA);
+                if (m.teamB) allTeamsSet.add(m.teamB);
+            });
+            const allTournamentTeams = Array.from(allTeamsSet);
+        
+            // --- CALCUL DES ÉQUIPES ACTIVES DANS CETTE RONDE ---
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
                 if (!m.isBye) {
@@ -911,7 +926,7 @@
                     activeTeamsInRound.add(m.teamB);
                 }
             });
-            const availableReferees = teams.filter(t => !activeTeamsInRound.has(t));
+            const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
             const totalCourtsToShow = Math.max(1, courtsCount || 1);
         
@@ -921,7 +936,7 @@
                     const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
                     const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
-                    let refereeName = "Non assigné";
+                    let refereeName = "Exempt / Repos";
                     if (availableReferees.length > 0) {
                         refereeName = availableReferees[(c - 1) % availableReferees.length];
                     }
