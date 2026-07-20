@@ -1120,13 +1120,13 @@
             
             const roundLabel = document.getElementById('tv-round-label');
             if (roundLabel) roundLabel.innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
-
+        
             if (tvSlides.length === 0) return;
             const slide = tvSlides[currentTvIndex];
-
+        
             container.style.opacity = '0';
             container.style.transform = 'scale(0.97)';
-
+        
             setTimeout(() => {
                 if (slide.type === 'empty') {
                     container.innerHTML = `
@@ -1137,18 +1137,30 @@
                 } 
                 else if (slide.type === 'match') {
                     const m = slide.data;
+                    
+                    // Gestion propre du 0 et du null/undefined
+                    const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
+                    const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
+        
                     container.innerHTML = `
                         <div class="text-center flex flex-col justify-between h-full space-y-8">
                             <div class="inline-block mx-auto bg-amber-400 text-gray-950 font-black text-2xl sm:text-4xl px-8 py-3 rounded-2xl shadow-lg uppercase">
                                  TERRAIN ${m.court > 0 ? m.court : 'Attente'}
                             </div>
+                            
+                            <!-- CORRECTION : Ajout du score B et rééquilibrage de l'affichage -->
                             <div class="grid grid-cols-1 md:grid-cols-7 items-center gap-4 py-6">
-                                <div class="md:col-span-3 text-2xl sm:text-4xl font-extrabold truncate text-white px-2">${m.teamA}</div>
-                                <div class="md:col-span-1 text-center font-black text-4xl sm:text-6xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
-                                    ${m.scoreA !== null ? m.scoreA : '-'}
+                                <div class="md:col-span-2 text-2xl sm:text-4xl font-extrabold truncate text-white px-2 text-right">${m.teamA}</div>
+                                <div class="md:col-span-1 text-center font-black text-4xl sm:text-5xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
+                                    ${displayScoreA}
                                 </div>
-                                <div class="md:col-span-3 text-2xl sm:text-4xl font-extrabold truncate text-white px-2">${m.teamB}</div>
+                                <div class="md:col-span-1 text-center font-normal text-2xl text-gray-500">VS</div>
+                                <div class="md:col-span-1 text-center font-black text-4xl sm:text-5xl text-amber-400 font-mono bg-gray-950/50 py-3 rounded-2xl border border-gray-800">
+                                    ${displayScoreB}
+                                </div>
+                                <div class="md:col-span-2 text-2xl sm:text-4xl font-extrabold truncate text-white px-2 text-left">${m.teamB}</div>
                             </div>
+                            
                             <div class="text-sm font-bold tracking-widest uppercase mt-4">
                                 ${m.played ? '<span class="text-emerald-400">Terminé</span>' : '<span class="text-amber-400 animate-pulse">En cours</span>'}
                             </div>
@@ -1164,13 +1176,13 @@
                             <ul class="max-w-md mx-auto space-y-2 mt-2">${listHtml}</ul>
                         </div>`;
                 }
-
+        
                 if (bulletsContainer) {
                     bulletsContainer.innerHTML = tvSlides.map((_, i) => `
                         <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
                     `).join('');
                 }
-
+        
                 container.style.opacity = '1';
                 container.style.transform = 'scale(1)';
             }, 200);
