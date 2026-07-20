@@ -824,16 +824,20 @@
             const label = document.getElementById('public-round-label');
             if (label) label.innerText = tournamentActive ? `Ronde ${currentRound}` : 'Ronde -';
             renderStandingsTable('public-standings-body');
-
+        
             const grid = document.getElementById('public-courts-grid');
             if (!grid) return;
-
+        
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             let html = "";
-
+        
             for (let c = 1; c <= 6; c++) {
                 const m = currentRoundMatches.find(m => m.court === c);
                 if (m) {
+                    // Sécurité : On extrait proprement le score ou on met une chaîne vide si undefined/null
+                    const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
+                    const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
+        
                     html += `
                         <div class="border border-gray-100 rounded-xl p-4 bg-gray-50 flex flex-col justify-between shadow-inner">
                             <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex justify-between items-center">
@@ -843,11 +847,11 @@
                             <div class="space-y-1">
                                 <div class="flex justify-between items-center text-sm">
                                     <span class="font-medium truncate ${m.played && m.scoreA > m.scoreB ? 'text-grass-700 font-bold' : 'text-gray-700'}">${m.teamA}</span>
-                                    <span class="font-mono font-bold text-gray-900">${m.scoreA !== null ? m.scoreA : '-'}</span>
+                                    <span class="font-mono font-bold text-gray-900">${displayScoreA}</span>
                                 </div>
                                 <div class="flex justify-between items-center text-sm">
                                     <span class="font-medium truncate ${m.played && m.scoreB > m.scoreA ? 'text-grass-700 font-bold' : 'text-gray-700'}">${m.teamB}</span>
-                                    <span class="font-mono font-bold text-gray-900">${m.scoreB !== null ? m.scoreB : '-'}</span>
+                                    <span class="font-mono font-bold text-gray-900">${displayScoreB}</span>
                                 </div>
                             </div>
                         </div>`;
