@@ -632,13 +632,29 @@
         }
 
         function nextRound() {
-            // Vérifier si tous les matchs du round actuel sont joués
+            // 1. Récupérer tous les matchs de la ronde actuelle
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
-            const allPlayed = currentRoundMatches.every(m => m.played || m.isBye);
-            if (!allPlayed) {
+            
+            // 2. CORRECTION : Vérifier que chaque match est soit un exempt (isBye), 
+            // soit possède des scores numériques bien saisis (le chiffre 0 est ainsi accepté)
+            const allScoresEntered = currentRoundMatches.every(m => 
+                m.isBye || (typeof m.scoreA === 'number' && !isNaN(m.scoreA) &&
+                            typeof m.scoreB === 'number' && !isNaN(m.scoreB))
+            );
+        
+            if (!allScoresEntered) {
                 alert("Vous devez valider tous les scores de la ronde actuelle avant de passer à la suivante !");
                 return;
             }
+        
+            // 3. Clôture officielle de tous les matchs de cette ronde avant de basculer
+            currentRoundMatches.forEach(m => {
+                if (!m.isBye) {
+                    m.played = true;
+                }
+            });
+        
+            // 4. Passage à la ronde suivante
             currentRound++;
             generateRound();
         }
@@ -697,14 +713,11 @@
         function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Mise à jour locale immédiate
+                // Mise à jour locale immédiate (0 reste 0, les champs vides deviennent null)
                 match[field] = value === "" ? null : parseInt(value, 10);
                 
-                if (match.scoreA !== null && match.scoreB !== null && !isNaN(match.scoreA) && !isNaN(match.scoreB)) {
-                    match.played = true;
-                } else {
-                    match.played = false;
-                }
+                // ON SUPPRIME LE BASCULEMENT AUTOMATIQUE À PLAYED = TRUE ICI.
+                // Le match reste "En cours" pendant que l'admin saisit les scores.
         
                 // 1. Sauvegarde dans Firebase ou LocalStorage
                 if (isFirebaseActive && dbRef) {
@@ -809,7 +822,7 @@
             courtsGrid.innerHTML = '';
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
         
-            // 1. Extraction de toutes les équipes présentes
+            // Extraction des équipes présentes
             const allTeamsSet = new Set();
             matches.forEach(m => {
                 if (m.teamA) allTeamsSet.add(m.teamA);
@@ -817,7 +830,7 @@
             });
             const allTournamentTeams = Array.from(allTeamsSet);
         
-            // 2. Identification des équipes qui jouent sur un terrain actif
+            // Identification des équipes actives
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court >= 1 && m.court <= courtsCount) {
@@ -826,7 +839,7 @@
                 }
             });
         
-            // 3. Les arbitres prioritaires sont ceux au repos
+            // Gestion des arbitres
             let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
             for (let i = 1; i <= courtsCount; i++) {
@@ -842,13 +855,16 @@
                 `;
         
                 if (match) {
-                    // CORRECTION AUTO-ARBITRAGE : Si aucune équipe n'est disponible au repos, on passe en auto-arbitrage
                     let refereeName;
                     if (availableReferees.length === 0) {
-                        refereeName = `Auto-arbitage`;
+                        refereeName = `Auto (${match.teamA})`;
                     } else {
                         refereeName = availableReferees[(i - 1) % availableReferees.length];
                     }
+        
+                    // Affiche la valeur numérique (même 0), ou vide si null
+                    const valA = (typeof match.scoreA === 'number') ? match.scoreA : '';
+                    const valB = (typeof match.scoreB === 'number') ? match.scoreB : '';
         
                     courtHtml += `
                         <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
@@ -859,11 +875,11 @@
                             <span class="text-left flex-1">${match.teamB}</span>
                         </div>
                         <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
-                            <input type="number" min="0" id="input-scoreA-${match.id}" value="${match.scoreA ?? ''}" placeholder="0" 
+                            <input type="number" min="0" id="input-scoreA-${match.id}" value="${valA}" placeholder="0" 
                                 oninput="updateMatchScore(${match.id}, 'scoreA', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                             <span class="text-gray-400 font-bold">-</span>
-                            <input type="number" min="0" id="input-scoreB-${match.id}" value="${match.scoreB ?? ''}" placeholder="0" 
+                            <input type="number" min="0" id="input-scoreB-${match.id}" value="${valB}" placeholder="0" 
                                 oninput="updateMatchScore(${match.id}, 'scoreB', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                         </div>
@@ -874,7 +890,7 @@
                 courtHtml += `</div>`;
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
-        }
+        }    
 
         function renderStandingsTable(targetId) {
             const body = document.getElementById(targetId);
