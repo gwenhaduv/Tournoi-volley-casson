@@ -1106,11 +1106,6 @@
                 }
             });
 
-            // Slide pour les équipes exemptes s'il y en a
-            const exempts = currentRoundMatches.filter(m => m.isBye);
-            if (exempts.length > 0) {
-                tvSlides.push({ type: 'exempt', data: exempts });
-            }
         }
 
         function renderTvSlide() {
