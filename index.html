@@ -656,36 +656,34 @@
         
         // Découpage de la logique de vérification pour la rendre infaillible
         function verifierEtPasserALaRondeSuivante() {
-            // 1. Filtrer en forçant la conversion en nombre (évite le piège "1" !== 1)
+            // 1. Filtrer les matchs de la ronde actuelle
             const currentRoundMatches = matches.filter(m => parseInt(m.round, 10) === parseInt(currentRound, 10));
         
             if (currentRoundMatches.length === 0) {
-                alert(`Aucun match trouvé pour la Ronde ${currentRound}. Vérifiez la structure des matchs.`);
+                alert(`Aucun match trouvé pour la Ronde ${currentRound}.`);
                 return;
             }
         
-            // 2. Trouver LE match précis qui pose problème (au lieu d'un simple true/false)
+            // 2. CORRECTION : On ne vérifie que les matchs REELS joués sur un VRAI terrain (court > 0)
             const matchIncomplet = currentRoundMatches.find(m => {
-                if (m.isBye) return false; // Les exempts ne bloquent pas
+                // Ignorer les exempts ET ignorer les matchs fantômes sans terrain affecté
+                if (m.isBye || !m.court || m.court <= 0) return false; 
         
                 const scoreAValid = m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "" && !isNaN(parseInt(m.scoreA, 10));
                 const scoreBValid = m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "" && !isNaN(parseInt(m.scoreB, 10));
         
-                // On retourne true si le match est INCOMPLET
                 return !scoreAValid || !scoreBValid;
             });
         
-            // 3. Si un match est incomplet, on affiche EXACTEMENT lequel bloque !
+            // 3. Si un VRAI match sur le terrain est incomplet, on informe l'admin
             if (matchIncomplet) {
-                console.error("Match bloquant pour le changement de ronde :", matchIncomplet);
-                const nomTerrain = matchIncomplet.court ? `Terrain ${matchIncomplet.court}` : 'Terrain non attribué';
-                alert(`Impossible de passer à la ronde suivante !\n\nMatch bloquant : ${nomTerrain}\n${matchIncomplet.teamA} vs ${matchIncomplet.teamB}\n(Score A: ${matchIncomplet.scoreA}, Score B: ${matchIncomplet.scoreB})`);
+                alert(`Impossible de passer à la ronde suivante !\n\nLe match du Terrain ${matchIncomplet.court} (${matchIncomplet.teamA} vs ${matchIncomplet.teamB}) n'a pas encore ses deux scores.`);
                 return;
             }
         
-            // 4. Tout est OK : validation des scores et clôture des matchs de la ronde
+            // 4. Clôture uniquement des vrais matchs de la ronde
             currentRoundMatches.forEach(m => {
-                if (!m.isBye) {
+                if (!m.isBye && m.court > 0) {
                     m.scoreA = parseInt(m.scoreA, 10);
                     m.scoreB = parseInt(m.scoreB, 10);
                     m.played = true;
@@ -695,14 +693,14 @@
             // 5. Passage à la ronde suivante
             currentRound = parseInt(currentRound, 10) + 1;
         
-            // 6. Sauvegarde de l'état mis à jour
+            // 6. Sauvegarde
             if (isFirebaseActive && dbRef) {
                 dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
             } else {
                 localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
             }
         
-            // 7. Génération du nouveau tirage
+            // 7. Génération de la ronde suivante
             generateRound();
         }
 
