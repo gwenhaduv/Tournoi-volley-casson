@@ -1096,16 +1096,53 @@
                 tvSlides.push({ type: 'empty', title: 'Attente du tournoi' });
                 return;
             }
-
+        
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
-            
-            // Création d'une slide individuelle par match en cours
+        
+            // 1. Identification de toutes les équipes
+            const allTeamsSet = new Set();
+            matches.forEach(m => {
+                if (m.teamA) allTeamsSet.add(m.teamA);
+                if (m.teamB) allTeamsSet.add(m.teamB);
+            });
+            const allTournamentTeams = Array.from(allTeamsSet);
+        
+            // 2. Équipes qui jouent dans cette ronde sur un terrain actif
+            const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
-                if (!m.isBye) {
-                    tvSlides.push({ type: 'match', data: m });
+                if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
+                    activeTeamsInRound.add(m.teamA);
+                    activeTeamsInRound.add(m.teamB);
                 }
             });
-
+        
+            // 3. Équipes disponibles pour arbitrer (au repos)
+            const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
+        
+            // 4. Filtrer uniquement les matchs sur un vrai terrain et leur associer l'arbitre
+            currentRoundMatches.forEach(m => {
+                if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
+                    let refereeName;
+                    if (availableReferees.length === 0) {
+                        refereeName = `Auto (${m.teamA})`;
+                    } else {
+                        // Attribution basée sur le numéro de terrain
+                        refereeName = availableReferees[(m.court - 1) % availableReferees.length];
+                    }
+        
+                    tvSlides.push({ 
+                        type: 'match', 
+                        data: m,
+                        referee: refereeName 
+                    });
+                }
+            });
+        
+            // 5. Slide pour les équipes exemptes
+            const exempts = currentRoundMatches.filter(m => m.isBye);
+            if (exempts.length > 0) {
+                tvSlides.push({ type: 'exempt', data: exempts });
+            }
         }
 
         function renderTvSlide() {
@@ -1134,48 +1171,45 @@
                 } 
                 else if (slide.type === 'match') {
                     const m = slide.data;
-                    
-                    // LOG DIAGNOSTIC : Regarde la console (F12) pour vérifier le contenu exact de m
-                    console.log("Données du match sur la TV :", m);
+                    const referee = slide.referee || 'Auto';
         
-                    // Gestion ultra-stricte des scores (0 inclus, fallback sur '-' si vide/undefined)
                     const scoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
                     const scoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
                     container.innerHTML = `
-                        <div class="text-center flex flex-col justify-between h-full space-y-6 py-2">
-                            <!-- EN-TÊTE TERRAIN -->
-                            <div class="inline-block mx-auto bg-amber-400 text-gray-950 font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl shadow-lg uppercase">
-                                 TERRAIN ${m.court > 0 ? m.court : 'Attente'}
+                        <div class="text-center flex flex-col justify-between h-full space-y-4 py-2">
+                            <!-- TERRAIN ET ARBITRE -->
+                            <div class="flex flex-col items-center gap-2">
+                                <div class="bg-amber-400 text-gray-950 font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl shadow-lg uppercase">
+                                     TERRAIN ${m.court}
+                                </div>
+                                <div class="text-xs sm:text-sm text-gray-300 font-semibold bg-gray-900/80 px-4 py-1 rounded-full border border-gray-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-whistle text-amber-400"></i> Arb : <span class="text-amber-400 font-bold">${referee}</span>
+                                </div>
                             </div>
                             
-                            <!-- BLOC SCORE EN FLEXBOX (Rien ne peut dépasser ou être masqué) -->
+                            <!-- BLOC MATCH & SCORES -->
                             <div class="flex items-center justify-center gap-2 sm:gap-4 w-full my-auto">
-                                <!-- Équipe A -->
                                 <div class="flex-1 text-right text-xl sm:text-3xl font-extrabold truncate text-white">
                                     ${m.teamA}
                                 </div>
                                 
-                                <!-- Score A -->
                                 <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
                                     ${scoreA}
                                 </div>
                                 
-                                <!-- Séparateur VS -->
                                 <div class="text-gray-500 font-bold text-sm sm:text-base px-1">VS</div>
                                 
-                                <!-- Score B -->
                                 <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
                                     ${scoreB}
                                 </div>
                                 
-                                <!-- Équipe B -->
                                 <div class="flex-1 text-left text-xl sm:text-3xl font-extrabold truncate text-white">
                                     ${m.teamB}
                                 </div>
                             </div>
                             
-                            <!-- STATUT DU MATCH -->
+                            <!-- STATUT -->
                             <div class="text-xs sm:text-sm font-bold tracking-widest uppercase">
                                 ${m.played ? '<span class="text-emerald-400">Terminé</span>' : '<span class="text-amber-400 animate-pulse">En cours</span>'}
                             </div>
