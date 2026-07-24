@@ -705,53 +705,142 @@
         }
 
         function generateRound() {
-            let copyTeams = [...teams];
-            // Mélange simple pour créer des paires
-            copyTeams.sort(() => Math.random() - 0.5);
-            
-            let newMatches = [];
-            let idCounter = matches.length + 1;
-
-            while (copyTeams.length > 1) {
-                newMatches.push({
-                    id: idCounter++,
-                    round: currentRound,
-                    teamA: copyTeams.shift(),
-                    teamB: copyTeams.shift(),
-                    scoreA: null,
-                    scoreB: null,
-                    played: false,
-                    isBye: false,
-                    court: 0
+            // 1. Calcul des statistiques de chaque équipe pour établir le classement Suisse
+            const stats = teams.map(teamName => {
+                let wins = 0;
+                let pointsDiff = 0;
+                let pointsFor = 0;
+                let roundsWaiting = 0; // Compteur pour donner la priorité à ceux qui ont attendu
+        
+                matches.filter(m => m.played && !m.isBye).forEach(m => {
+                    if (m.teamA === teamName) {
+                        pointsFor += m.scoreA;
+                        pointsDiff += (m.scoreA - m.scoreB);
+                        if (m.scoreA > m.scoreB) wins++;
+                    } else if (m.teamB === teamName) {
+                        pointsFor += m.scoreB;
+                        pointsDiff += (m.scoreB - m.scoreA);
+                        if (m.scoreB > m.scoreA) wins++;
+                    }
                 });
-            }
-
-            // Gestion de l'exempt (nombre impair)
-            if (copyTeams.length === 1) {
-                newMatches.push({
-                    id: idCounter++,
+        
+                // Vérifier si l'équipe a dû attendre lors de la DERNIÈRE ronde jouée (court === 0)
+                const lastRound = currentRound - 1;
+                if (lastRound > 0) {
+                    const hadNoCourtLastRound = matches.some(m => 
+                        parseInt(m.round, 10) === lastRound && 
+                        (m.teamA === teamName || m.teamB === teamName) && 
+                        (!m.court || m.court === 0)
+                    );
+                    if (hadNoCourtLastRound) roundsWaiting = 1;
+                }
+        
+                return {
+                    name: teamName,
+                    wins: wins,
+                    pointsDiff: pointsDiff,
+                    pointsFor: pointsFor,
+                    roundsWaiting: roundsWaiting
+                };
+            });
+        
+            // 2. Tri : Priorité ABSOLUE à ceux qui ont attendu, puis classement Suisse (Victoires > Diff > Points)
+            stats.sort((a, b) => {
+                if (b.roundsWaiting !== a.roundsWaiting) return b.roundsWaiting - a.roundsWaiting; // Priorité attente
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                if (b.pointsDiff !== a.pointsDiff) return b.pointsDiff - a.pointsDiff;
+                return b.pointsFor - a.pointsFor;
+            });
+        
+            // 3. Récupérer l'historique des duels passés
+            const pastOpponents = {};
+            teams.forEach(t => pastOpponents[t] = new Set());
+            matches.filter(m => m.played && !m.isBye).forEach(m => {
+                pastOpponents[m.teamA].add(m.teamB);
+                pastOpponents[m.teamB].add(m.teamA);
+            });
+        
+            let availableTeams = [...stats.map(s => s.name)];
+            const newPairings = [];
+        
+            // 4. Gestion de l'exempt (Bye) SI nombre TOTAL d'équipes impair
+            if (availableTeams.length % 2 !== 0) {
+                let byeCandidateIndex = availableTeams.length - 1;
+                while (byeCandidateIndex >= 0) {
+                    const candidate = availableTeams[byeCandidateIndex];
+                    const hadBye = matches.some(m => m.isBye && m.teamA === candidate);
+                    if (!hadBye) break;
+                    byeCandidateIndex--;
+                }
+                if (byeCandidateIndex < 0) byeCandidateIndex = availableTeams.length - 1;
+        
+                const byeTeam = availableTeams.splice(byeCandidateIndex, 1)[0];
+                newPairings.push({
+                    id: `R${currentRound}_BYE_${Date.now()}`,
                     round: currentRound,
-                    teamA: copyTeams.shift(),
+                    court: 0,
+                    teamA: byeTeam,
                     teamB: "EXEMPT",
                     scoreA: 0,
                     scoreB: 0,
                     played: true,
-                    isBye: true,
-                    court: 0
+                    isBye: true
                 });
             }
-
-            // Attribution des terrains dynamiques
+        
+            // 5. Appariement Suisse des équipes
+            while (availableTeams.length >= 2) {
+                const teamA = availableTeams.shift();
+                let opponentIndex = -1;
+        
+                for (let i = 0; i < availableTeams.length; i++) {
+                    if (!pastOpponents[teamA].has(availableTeams[i])) {
+                        opponentIndex = i;
+                        break;
+                    }
+                }
+        
+                if (opponentIndex === -1) opponentIndex = 0;
+        
+                const teamB = availableTeams.splice(opponentIndex, 1)[0];
+                newPairings.push({ teamA, teamB });
+            }
+        
+            // 6. Distribution sur les terrains physiques disponibles
             let currentCourt = 1;
-            newMatches.forEach(match => {
-                if (!match.isBye && currentCourt <= courtsCount) {
-                    match.court = currentCourt;
-                    currentCourt++;
+            newPairings.forEach(pair => {
+                if (!pair.isBye) {
+                    // Si on dépasse le nombre de terrains réels, court = 0 (En attente)
+                    const assignedCourt = currentCourt <= courtsCount ? currentCourt : 0;
+        
+                    matches.push({
+                        id: `R${currentRound}_C${assignedCourt}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+                        round: currentRound,
+                        court: assignedCourt,
+                        teamA: pair.teamA,
+                        teamB: pair.teamB,
+                        scoreA: null,
+                        scoreB: null,
+                        played: false,
+                        isBye: false
+                    });
+        
+                    if (assignedCourt > 0) currentCourt++;
+                } else {
+                    matches.push(pair);
                 }
             });
-
-            matches = [...matches, ...newMatches];
-            saveState();
+        
+            // 7. Sauvegarde & Rendu
+            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof dbRef !== 'undefined' && dbRef) {
+                dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
+            } else {
+                localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
+            }
+        
+            if (typeof renderAll === 'function') {
+                renderAll();
+            }
         }
 
         // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
