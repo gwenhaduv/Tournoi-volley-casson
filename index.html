@@ -53,40 +53,6 @@
         <i class="fa-solid fa-triangle-exclamation mr-2"></i> Mode déconnecté (Local). Pour activer le partage en direct, configurez vos clés Firebase dans le code source.
     </div>
 
-    <!-- Bloc Contrôle du Chronomètre -->
-    <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <i class="fa-solid fa-stopwatch text-grass-600"></i> Chronomètre de Match
-        </h2>
-        
-        <div class="flex flex-wrap items-center gap-3">
-            <!-- Champ Saisie Minutes -->
-            <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                <input type="number" id="timerInput" min="1" max="120" value="12" 
-                       class="w-12 text-center text-sm font-bold bg-transparent focus:outline-none">
-                <span class="text-xs font-semibold text-gray-500">min</span>
-            </div>
-    
-            <!-- Affichage de l'heure/décompte côté Admin -->
-            <div id="adminTimerDisplay" class="text-2xl font-black text-gray-800 tracking-wider min-w-[90px] text-center font-mono">
-                12:00
-            </div>
-    
-            <!-- Boutons de contrôle -->
-            <div class="flex items-center gap-2">
-                <button onclick="startTimer()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-play"></i> Lancer
-                </button>
-                <button onclick="pauseTimer()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-pause"></i> Pause
-                </button>
-                <button onclick="resetTimer()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-rotate-left"></i> Réinit.
-                </button>
-            </div>
-        </div>
-    </section>
-
     <!-- ========================================== -->
     <!-- ÉCRAN 1 : INTERFACE DE GESTION COMPLETE    -->
     <!-- ========================================== -->
@@ -293,6 +259,40 @@
                         </table>
                     </div>
                 </section>
+                <!-- 2. Chronomètre (placé JUSTE SOUS LE CLASSEMENT) -->
+                <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
+                    <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                        <i class="fa-solid fa-stopwatch text-grass-600"></i> Chronomètre de Match
+                    </h3>
+                    
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <!-- Champ minutes + affichage grand -->
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5">
+                                <input type="number" id="timerInput" min="1" max="120" value="12" 
+                                       class="w-10 text-center font-bold text-sm bg-transparent focus:outline-none">
+                                <span class="text-xs font-medium text-gray-400">min</span>
+                            </div>
+            
+                            <div id="adminTimerDisplay" class="text-2xl font-black text-gray-900 font-mono tracking-tight">
+                                15:00
+                            </div>
+                        </div>
+            
+                        <!-- Boutons -->
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="startTimer()" title="Démarrer" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl text-xs transition-all">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button onclick="pauseTimer()" title="Pause" class="bg-amber-500 hover:bg-amber-600 text-white p-2.5 rounded-xl text-xs transition-all">
+                                <i class="fa-solid fa-pause"></i>
+                            </button>
+                            <button onclick="resetTimer()" title="Réinitialiser" class="bg-gray-100 hover:bg-gray-200 text-gray-600 p-2.5 rounded-xl text-xs transition-all">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
 
 
@@ -357,11 +357,23 @@
     <!-- ÉCRAN 3 : NOUVEAU CAROUSEL TV DÉFILANT    -->
     <!-- ========================================== -->
     <div id="view-tv" class="hidden bg-gray-950 min-h-screen text-white flex flex-col justify-between p-6">
+
+        <!-- En-tête de la Vue TV avec Chrono dynamique -->
+        <div class="flex justify-between items-center bg-gray-900 text-white p-4 rounded-2xl shadow-lg border border-gray-800">  
+            <!-- Badge Timer Géant -->
+            <div class="bg-black/60 border border-white/10 px-4 py-1.5 rounded-xl flex items-center gap-3">
+                <i class="fa-solid fa-stopwatch text-grass-400 animate-pulse text-lg"></i>
+                <span id="publicTimerDisplay" class="text-2xl font-black font-mono text-white tracking-wider">
+                    15:00
+                </span>
+            </div>
+        </div>
+        
         <div class="flex justify-between items-center border-b border-gray-800 pb-4">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-volleyball text-grass-500 text-3xl animate-spin" style="animation-duration: 10s;"></i>
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-wide uppercase text-gray-100">Tournoi Volley Herbe</h1>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-wide uppercase text-gray-100">Tournoi de Volley CASSON</h1>
                     <p class="text-xs text-grass-400 font-bold tracking-widest uppercase">Affichage en direct</p>
                 </div>
             </div>
@@ -384,13 +396,6 @@
                 <span>Changement automatique toutes les 5 secondes</span>
             </div>
             <div id="tv-bullets" class="flex gap-1.5"></div>
-        </div>
-        <!-- Affichage Géant du Timer sur l'Écran Public / Carrousel -->
-        <div class="bg-black/40 backdrop-blur-md border border-white/20 px-5 py-2 rounded-2xl flex items-center gap-3 shadow-inner">
-            <i class="fa-solid fa-stopwatch text-grass-400 text-xl animate-pulse"></i>
-            <span id="publicTimerDisplay" class="text-3xl font-black text-white font-mono tracking-widest">
-                12:00
-            </span>
         </div>
     </div>
     
