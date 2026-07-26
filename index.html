@@ -53,6 +53,40 @@
         <i class="fa-solid fa-triangle-exclamation mr-2"></i> Mode déconnecté (Local). Pour activer le partage en direct, configurez vos clés Firebase dans le code source.
     </div>
 
+    <!-- Bloc Contrôle du Chronomètre -->
+    <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-stopwatch text-grass-600"></i> Chronomètre de Match
+        </h2>
+        
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Champ Saisie Minutes -->
+            <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                <input type="number" id="timerInput" min="1" max="120" value="12" 
+                       class="w-12 text-center text-sm font-bold bg-transparent focus:outline-none">
+                <span class="text-xs font-semibold text-gray-500">min</span>
+            </div>
+    
+            <!-- Affichage de l'heure/décompte côté Admin -->
+            <div id="adminTimerDisplay" class="text-2xl font-black text-gray-800 tracking-wider min-w-[90px] text-center font-mono">
+                12:00
+            </div>
+    
+            <!-- Boutons de contrôle -->
+            <div class="flex items-center gap-2">
+                <button onclick="startTimer()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-play"></i> Lancer
+                </button>
+                <button onclick="pauseTimer()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-pause"></i> Pause
+                </button>
+                <button onclick="resetTimer()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i> Réinit.
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- ========================================== -->
     <!-- ÉCRAN 1 : INTERFACE DE GESTION COMPLETE    -->
     <!-- ========================================== -->
@@ -350,6 +384,13 @@
                 <span>Changement automatique toutes les 5 secondes</span>
             </div>
             <div id="tv-bullets" class="flex gap-1.5"></div>
+        </div>
+        <!-- Affichage Géant du Timer sur l'Écran Public / Carrousel -->
+        <div class="bg-black/40 backdrop-blur-md border border-white/20 px-5 py-2 rounded-2xl flex items-center gap-3 shadow-inner">
+            <i class="fa-solid fa-stopwatch text-grass-400 text-xl animate-pulse"></i>
+            <span id="publicTimerDisplay" class="text-3xl font-black text-white font-mono tracking-widest">
+                12:00
+            </span>
         </div>
     </div>
     
@@ -1376,6 +1417,142 @@
                 container.style.opacity = '1';
                 container.style.transform = 'scale(1)';
             }, 200);
+        }
+
+        // --- VARIABLES ET ÉTAT DU TIMER ---
+        let timerInterval = null;
+        let timerState = {
+            durationMinutes: 12, // Durée par défaut
+            remainingSeconds: 12 * 60,
+            isRunning: false
+        };
+        
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTimerState();
+            updateTimerDisplays();
+            
+            // Si le timer était en train de tourner lors d'un rafraîchissement
+            if (timerState.isRunning) {
+                startTimerLoop();
+            }
+        });
+        
+        // Lancer / Reprendre le chrono
+        function startTimer() {
+            if (timerState.isRunning) return;
+        
+            // Si le chrono est à 0, recharger depuis l'input
+            if (timerState.remainingSeconds <= 0) {
+                const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 12;
+                timerState.durationMinutes = inputMin;
+                timerState.remainingSeconds = inputMin * 60;
+            }
+        
+            timerState.isRunning = true;
+            saveTimerState();
+            startTimerLoop();
+        }
+        
+        // Mettre en pause
+        function pauseTimer() {
+            timerState.isRunning = false;
+            clearInterval(timerInterval);
+            saveTimerState();
+        }
+        
+        // Réinitialiser
+        function resetTimer() {
+            pauseTimer();
+            const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 12;
+            timerState.durationMinutes = inputMin;
+            timerState.remainingSeconds = inputMin * 60;
+            saveTimerState();
+            updateTimerDisplays();
+        }
+        
+        // Boucle principale du compte à rebours
+        function startTimerLoop() {
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (!timerState.isRunning) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+        
+                if (timerState.remainingSeconds > 0) {
+                    timerState.remainingSeconds--;
+                    updateTimerDisplays();
+                    
+                    // Sauvegarde régulière pour la synchro
+                    if (timerState.remainingSeconds % 5 === 0) {
+                        saveTimerState();
+                    }
+                } else {
+                    // Fin du temps
+                    timerState.isRunning = false;
+                    clearInterval(timerInterval);
+                    saveTimerState();
+                    updateTimerDisplays();
+                    onTimerFinished();
+                }
+            }, 1000);
+        }
+        
+        // Mise à jour visuelle des textes (MM:SS)
+        function updateTimerDisplays() {
+            const minutes = Math.floor(timerState.remainingSeconds / 60);
+            const seconds = timerState.remainingSeconds % 60;
+            
+            // Format "05:09"
+            const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+            const adminDisplay = document.getElementById('adminTimerDisplay');
+            const publicDisplay = document.getElementById('publicTimerDisplay');
+        
+            if (adminDisplay) adminDisplay.textContent = formattedTime;
+            if (publicDisplay) publicDisplay.textContent = formattedTime;
+        
+            // Style visuel alerte si moins de 1 minute
+            if (publicDisplay) {
+                if (timerState.remainingSeconds <= 60 && timerState.remainingSeconds > 0) {
+                    publicDisplay.classList.add('text-rose-400', 'animate-pulse');
+                    publicDisplay.classList.remove('text-white');
+                } else {
+                    publicDisplay.classList.remove('text-rose-400', 'animate-pulse');
+                    publicDisplay.classList.add('text-white');
+                }
+            }
+        }
+        
+        // Action en fin de temps (Optionnel : alerte sonore / visuelle)
+        function onTimerFinished() {
+            const publicDisplay = document.getElementById('publicTimerDisplay');
+            if (publicDisplay) {
+                publicDisplay.textContent = "FIN DE RONDE !";
+            }
+        }
+        
+        // --- SAUVEGARDE & SYNCHRONISATION ---
+        function saveTimerState() {
+            // Si tu utilises Firebase
+            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof dbRef !== 'undefined' && dbRef) {
+                dbRef.child('timer').set(timerState);
+            } else {
+                // Sinon LocalStorage
+                localStorage.setItem('volley_timer_state', JSON.stringify(timerState));
+            }
+        }
+        
+        function loadTimerState() {
+            const saved = localStorage.getItem('volley_timer_state');
+            if (saved) {
+                try {
+                    timerState = JSON.parse(saved);
+                    document.getElementById('timerInput').value = timerState.durationMinutes || 12;
+                } catch(e) { console.error(e); }
+            }
         }
     </script>
 </body>
