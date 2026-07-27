@@ -1427,8 +1427,8 @@
         // --- VARIABLES ET ÉTAT DU TIMER ---
         let timerInterval = null;
         let timerState = {
-            durationMinutes: 12, // Durée par défaut
-            remainingSeconds: 12 * 60,
+            durationMinutes: 00, // Durée par défaut
+            remainingSeconds: 00 * 60,
             isRunning: false
         };
         
@@ -1449,7 +1449,7 @@
         
             // Si le chrono est à 0, recharger depuis l'input
             if (timerState.remainingSeconds <= 0) {
-                const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 12;
+                const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 00;
                 timerState.durationMinutes = inputMin;
                 timerState.remainingSeconds = inputMin * 60;
             }
@@ -1469,7 +1469,7 @@
         // Réinitialiser
         function resetTimer() {
             pauseTimer();
-            const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 12;
+            const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 00;
             timerState.durationMinutes = inputMin;
             timerState.remainingSeconds = inputMin * 60;
             saveTimerState();
@@ -1555,7 +1555,7 @@
             if (saved) {
                 try {
                     timerState = JSON.parse(saved);
-                    document.getElementById('timerInput').value = timerState.durationMinutes || 12;
+                    document.getElementById('timerInput').value = timerState.durationMinutes || 00;
                 } catch(e) { console.error(e); }
             }
         }
