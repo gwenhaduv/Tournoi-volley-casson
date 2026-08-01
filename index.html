@@ -1162,76 +1162,80 @@
             const roundLabel = document.getElementById('tv-round-label');
             if (roundLabel) roundLabel.innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
         
-            if (tvSlides.length === 0) return;
+            // Sécurité si les slides ne sont pas encore construites
+            if (!tvSlides || tvSlides.length === 0) {
+                tvSlides = [{ type: 'empty', title: 'Attente du tournoi' }];
+            }
+        
             if (currentTvIndex >= tvSlides.length) currentTvIndex = 0;
             
             const slide = tvSlides[currentTvIndex];
-            container.style.opacity = '0';
-
-            setTimeout(() => {
-                if (slide.type === 'empty') {
-                    container.innerHTML = `
-                        <div class="text-center py-12">
-                            <i class="fa-solid fa-volleyball text-6xl text-gray-700 animate-bounce mb-6"></i>
-                            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-400">En attente du lancement...</h2>
-                        </div>`;
-                } 
-                else if (slide.type === 'match') {
-                    const m = slide.data;
-                    const referee = slide.referee || 'Auto';
-                    const scoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
-                    const scoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
-                    container.innerHTML = `
-                        <div class="text-center flex flex-col justify-between h-full space-y-4 py-2">
-                            <div class="flex flex-col items-center gap-2">
-                                <div class="bg-amber-400 text-gray-950 font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl shadow-lg uppercase">
-                                     TERRAIN ${m.court}
-                                </div>
-                                <div class="text-xs sm:text-sm text-gray-300 font-semibold bg-gray-900/80 px-4 py-1 rounded-full border border-gray-800 flex items-center gap-2">
-                                    <i class="fa-solid fa-whistle text-amber-400"></i> Arb : <span class="text-amber-400 font-bold">${referee}</span>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center justify-center gap-2 sm:gap-4 w-full my-auto">
-                                <div class="flex-1 text-right text-xl sm:text-3xl font-extrabold truncate text-white">
-                                    ${m.teamA}
-                                </div>
-                                <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
-                                    ${scoreA}
-                                </div>
-                                <div class="text-gray-500 font-bold text-sm sm:text-base px-1">VS</div>
-                                <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
-                                    ${scoreB}
-                                </div>
-                                <div class="flex-1 text-left text-xl sm:text-3xl font-extrabold truncate text-white">
-                                    ${m.teamB}
-                                </div>
-                            </div>
-                            
-                            <div class="text-xs sm:text-sm font-bold tracking-widest uppercase">
-                                ${m.played ? '<span class="text-emerald-400">Terminé</span>' : '<span class="text-amber-400 animate-pulse">En cours</span>'}
-                            </div>
-                        </div>`;
-                }
-                else if (slide.type === 'exempt') {
-                    const listHtml = slide.data.map(m => `<li class="text-xl font-bold text-gray-300 bg-gray-950/40 p-3 rounded-xl border border-gray-800">${m.teamA}</li>`).join('');
-                    container.innerHTML = `
-                        <div class="text-center py-6">
-                            <div class="inline-block mx-auto bg-gray-800 text-gray-100 font-bold text-lg px-6 py-2 rounded-xl mb-6">
-                                💤 Équipes Exemptes / Au Repos
-                            </div>
-                            <ul class="max-w-md mx-auto space-y-2 mt-2">${listHtml}</ul>
-                        </div>`;
-                }
+            // On injecte DIRECTEMENT le contenu (sans opacity = 0 et sans setTimeout)
+            if (slide.type === 'empty') {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fa-solid fa-volleyball text-6xl text-amber-500 animate-bounce mb-6"></i>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">En attente du lancement...</h2>
+                    </div>`;
+            } 
+            else if (slide.type === 'match') {
+                const m = slide.data;
+                const referee = slide.referee || 'Auto';
+                const scoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
+                const scoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
-                if (bulletsContainer) {
-                    bulletsContainer.innerHTML = tvSlides.map((_, i) => `
-                        <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
-                    `).join('');
-                }
-                container.style.opacity = '1';
-            }, 200);
+                container.innerHTML = `
+                    <div class="text-center flex flex-col justify-between h-full space-y-4 py-2">
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="bg-amber-400 text-gray-950 font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl shadow-lg uppercase">
+                                 TERRAIN ${m.court}
+                            </div>
+                            <div class="text-xs sm:text-sm text-gray-300 font-semibold bg-gray-900/80 px-4 py-1 rounded-full border border-gray-800 flex items-center gap-2">
+                                <i class="fa-solid fa-whistle text-amber-400"></i> Arb : <span class="text-amber-400 font-bold">${referee}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-center gap-2 sm:gap-4 w-full my-auto">
+                            <div class="flex-1 text-right text-xl sm:text-3xl font-extrabold truncate text-white">
+                                ${m.teamA}
+                            </div>
+                            <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
+                                ${scoreA}
+                            </div>
+                            <div class="text-gray-500 font-bold text-sm sm:text-base px-1">VS</div>
+                            <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
+                                ${scoreB}
+                            </div>
+                            <div class="flex-1 text-left text-xl sm:text-3xl font-extrabold truncate text-white">
+                                ${m.teamB}
+                            </div>
+                        </div>
+                        
+                        <div class="text-xs sm:text-sm font-bold tracking-widest uppercase">
+                            ${m.played ? '<span class="text-emerald-400">Terminé</span>' : '<span class="text-amber-400 animate-pulse">En cours</span>'}
+                        </div>
+                    </div>`;
+            }
+            else if (slide.type === 'exempt') {
+                const listHtml = slide.data.map(m => `<li class="text-xl font-bold text-gray-300 bg-gray-950/40 p-3 rounded-xl border border-gray-800">${m.teamA}</li>`).join('');
+                container.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="inline-block mx-auto bg-gray-800 text-gray-100 font-bold text-lg px-6 py-2 rounded-xl mb-6">
+                            💤 Équipes Exemptes / Au Repos
+                        </div>
+                        <ul class="max-w-md mx-auto space-y-2 mt-2">${listHtml}</ul>
+                    </div>`;
+            }
+        
+            if (bulletsContainer) {
+                bulletsContainer.innerHTML = tvSlides.map((_, i) => `
+                    <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
+                `).join('');
+            }
+        
+            // On s'assure qu'il est bien visible
+            container.style.opacity = '1';
         }
 
         // --- GESTION DU TIMER ---
