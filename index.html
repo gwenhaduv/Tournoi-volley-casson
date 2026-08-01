@@ -1108,17 +1108,52 @@
             container.innerHTML = html;
         }
         
+        let tvInterval = null;
+        let tvTimerInterval = null; // Ajout d'une variable pour le chrono
+        
         function startTvCarousel() {
-            currentTvIndex = 0;
+            // 1. Réinitialise les intervalles existants s'il y en a
+            if (tvInterval) clearInterval(tvInterval);
+            if (tvTimerInterval) clearInterval(tvTimerInterval);
+        
+            // 2. Met à jour et affiche la première diapositive
             buildTvSlides();
             renderTvSlide();
-            if (tvInterval) clearInterval(tvInterval);
+        
+            // 3. Rotation des diapositives toutes les 5 secondes (5000 ms)
             tvInterval = setInterval(() => {
                 if (tvSlides.length > 1) {
                     currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
                     renderTvSlide();
                 }
             }, 5000);
+        
+            // 4. MÀJ du chrono chaque seconde (1000 ms)
+            tvTimerInterval = setInterval(() => {
+                updateTvChronometer();
+            }, 1000);
+        }
+
+        function updateTvChronometer() {
+            const timerElement = document.getElementById('tv-timer-display'); // Vérifiez l'ID de votre élément chrono
+            if (!timerElement) return;
+        
+            // Remplacez cette ligne par la logique de votre chrono actuel
+            // Exemple basique :
+            if (typeof getFormattedTournamentTime === 'function') {
+                timerElement.innerText = getFormattedTournamentTime();
+            }
+        }
+
+        function stopTvCarousel() {
+            if (tvInterval) {
+                clearInterval(tvInterval);
+                tvInterval = null;
+            }
+            if (tvTimerInterval) {
+                clearInterval(tvTimerInterval);
+                tvTimerInterval = null;
+            }
         }
 
         function buildTvSlides() {
