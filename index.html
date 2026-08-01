@@ -527,29 +527,39 @@
         }
 
         function navigateToView(view) {
-            if (tvInterval) { clearInterval(tvInterval); tvInterval = null; }
+            // 1. Nettoyage complet des carrousels et des chronos (TV)
+            stopTvCarousel();
         
+            // 2. Masquage de toutes les vues
             document.getElementById('view-admin').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
             document.getElementById('view-history').className = 'hidden';
-            
+        
             const cleanUrl = window.location.origin + window.location.pathname;
-            
+        
+            // 3. Gestion sécurisée de l'historique d'URL
+            try {
+                if (view === 'admin') {
+                    window.history.pushState({view: 'admin'}, '', cleanUrl);
+                } else {
+                    window.history.pushState({view: view}, '', `${cleanUrl}?view=${view}`);
+                }
+            } catch (e) {
+                console.warn("pushState non supporté en mode fichier local (file://)");
+            }
+        
+            // 4. Affichage et initialisation de la vue demandée
             if (view === 'admin') {
-                window.history.pushState({view: 'admin'}, '', cleanUrl);
                 document.getElementById('view-admin').className = 'block';
                 updateUI();
             } else if (view === 'results') {
-                window.history.pushState({view: 'results'}, '', `${cleanUrl}?view=results`);
                 document.getElementById('view-public').className = 'block';
                 renderPublicUI();
             } else if (view === 'tv') {
-                window.history.pushState({view: 'tv'}, '', `${cleanUrl}?view=tv`);
                 document.getElementById('view-tv').className = 'flex flex-col justify-between p-6 min-h-screen bg-gray-950 text-white';
                 startTvCarousel();
             } else if (view === 'history') {
-                window.history.pushState({view: 'history'}, '', `${cleanUrl}?view=history`);
                 document.getElementById('view-history').className = 'block';
                 renderHistoryPage();
             }
@@ -1111,23 +1121,27 @@
         let tvTimerInterval = null; // Ajout d'une variable pour le chrono
         
         function startTvCarousel() {
-            // 1. Réinitialise les intervalles existants s'il y en a
-            if (tvInterval) clearInterval(tvInterval);
-            if (tvTimerInterval) clearInterval(tvTimerInterval);
+            // 1. Nettoyage complet des anciens timers
+            stopTvCarousel();
         
-            // 2. Met à jour et affiche la première diapositive
+            // 2. Préparation du contenu
             buildTvSlides();
             renderTvSlide();
         
-            // 3. Rotation des diapositives toutes les 5 secondes (5000 ms)
+            // 3. Mise à jour IMMÉDIATE du chrono dès l'ouverture
+            updateTvChronometer();
+        
+            // 4. Rotation des diapositives (toutes les 5 sec)
             tvInterval = setInterval(() => {
                 if (tvSlides.length > 1) {
                     currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
                     renderTvSlide();
+                    // Re-forcer la mise à jour du chrono si le HTML de la slide vient d'être réinjecté
+                    updateTvChronometer(); 
                 }
             }, 5000);
         
-            // 4. MÀJ du chrono chaque seconde (1000 ms)
+            // 5. Cadence du chrono (toutes les 1 sec)
             tvTimerInterval = setInterval(() => {
                 updateTvChronometer();
             }, 1000);
