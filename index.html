@@ -1148,14 +1148,13 @@
         }
 
         function updateTvChronometer() {
-            const timerElement = document.getElementById('tv-timer-display'); // Vérifiez l'ID de votre élément chrono
+            const timerElement = document.getElementById('publicTimerDisplay');
             if (!timerElement) return;
         
-            // Remplacez cette ligne par la logique de votre chrono actuel
-            // Exemple basique :
-            if (typeof getFormattedTournamentTime === 'function') {
-                timerElement.innerText = getFormattedTournamentTime();
-            }
+            const minutes = Math.floor(timerState.remainingSeconds / 60);
+            const seconds = timerState.remainingSeconds % 60;
+            
+            timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
         function stopTvCarousel() {
