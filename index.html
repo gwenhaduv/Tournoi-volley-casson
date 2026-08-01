@@ -207,7 +207,7 @@
                         </div>
                     </div>
 
-                    <!-- 6 Courts Grid -->
+                    <!-- Courts Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="courts-grid">
                         <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
                             <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
@@ -217,7 +217,7 @@
                 </section>
             </div>
 
-            <!-- Column 3: Standings -->
+            <!-- Column 3: Standings & Timer -->
             <div class="space-y-8">
                 <!-- Live Dynamic Standings -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
@@ -259,17 +259,17 @@
                         </table>
                     </div>
                 </section>
-                <!-- 2. Chronomètre (placé JUSTE SOUS LE CLASSEMENT) -->
+
+                <!-- Chronomètre -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
                     <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2 uppercase tracking-wider">
                         <i class="fa-solid fa-stopwatch text-grass-600"></i> Chronomètre de Match
                     </h3>
                     
                     <div class="flex flex-wrap items-center justify-between gap-3">
-                        <!-- Champ minutes + affichage grand -->
                         <div class="flex items-center gap-3">
                             <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5">
-                                <input type="number" id="timerInput" min="1" max="120" value="00" 
+                                <input type="number" id="timerInput" min="1" max="120" value="15" 
                                        class="w-10 text-center font-bold text-sm bg-transparent focus:outline-none">
                                 <span class="text-xs font-medium text-gray-400">min</span>
                             </div>
@@ -279,7 +279,6 @@
                             </div>
                         </div>
             
-                        <!-- Boutons -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="startTimer()" title="Démarrer" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl text-xs transition-all">
                                 <i class="fa-solid fa-play"></i>
@@ -294,7 +293,8 @@
                     </div>
                 </section>
             </div>
-
+        </main>
+    </div>
 
     <!-- ========================================== -->
     <!-- ÉCRAN 2 : AFFICHAGE PUBLIC CLASSIQUE       -->
@@ -351,14 +351,14 @@
                     </div>
                 </div>
             </div>
-
+        </main>
+    </div>
 
     <!-- ========================================== -->
-    <!-- ÉCRAN 3 : NOUVEAU CAROUSEL TV DÉFILANT    -->
+    <!-- ÉCRAN 3 : CAROUSEL TV DÉFILANT             -->
     <!-- ========================================== -->
     <div id="view-tv" class="hidden bg-gray-950 min-h-screen text-white flex flex-col justify-between p-6">
-
-        <!-- En-tête de la Vue TV avec Chrono dynamique -->
+        <!-- En-tête de la Vue TV -->
         <div class="flex justify-between items-center bg-gray-900 text-white p-4 rounded-2xl shadow-lg border border-gray-800">  
             <!-- Badge Timer Géant -->
             <div class="bg-black/60 border border-white/10 px-4 py-1.5 rounded-xl flex items-center gap-3">
@@ -366,16 +366,6 @@
                 <span id="publicTimerDisplay" class="text-2xl font-black font-mono text-white tracking-wider">
                     15:00
                 </span>
-            </div>
-        </div>
-        
-        <div class="flex justify-between items-center border-b border-gray-800 pb-4">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-volleyball text-grass-500 text-3xl animate-spin" style="animation-duration: 10s;"></i>
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-wide uppercase text-gray-100">Tournoi de Volley CASSON</h1>
-                    <p class="text-xs text-grass-400 font-bold tracking-widest uppercase">Affichage en direct</p>
-                </div>
             </div>
             <div class="flex items-center gap-3">
                 <span id="tv-round-label" class="bg-grass-600 text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider">RONDE -</span>
@@ -400,11 +390,10 @@
     </div>
     
     <!-- ========================================== -->
-    <!-- ÉCRAN 4 : HISTORIQUE DES RÉSULTATS (PUBLIC / ADMIN) -->
+    <!-- ÉCRAN 4 : HISTORIQUE DES RÉSULTATS         -->
     <!-- ========================================== -->
     <div id="view-history" class="hidden min-h-screen bg-gray-50 p-4 md:p-6 font-sans">
         <div class="max-w-4xl mx-auto">
-            
             <!-- En-tête avec bouton retour -->
             <div class="flex justify-between items-center mb-6">
                 <button onclick="navigateToView('admin')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-xl transition duration-150 flex items-center gap-2">
@@ -418,18 +407,16 @@
             <!-- Conteneur principal de l'historique -->
             <div class="bg-white rounded-2xl shadow-md border border-gray-150 p-6">
                 <div id="history-page-container" class="space-y-6">
-                    <!-- Rempli dynamiquement en JS -->
                     <p class="text-gray-400 italic text-center py-8">Aucun match terminé pour le moment.</p>
                 </div>
             </div>
-    
         </div>
     </div>
 
     <!-- App Logic Script -->
     <script>
         // ==========================================
-        // 🛠 CONFIGURATION FIREBASE INTEGRÉE
+        // CONFIGURATION FIREBASE INTEGRÉE
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyC0jCmtlxUZPNquETfFTZK09q4-sAz9NHE",
@@ -460,7 +447,7 @@
 
         // Sauvegarde centralisée
         function saveState() {
-            const state = { teams, currentRound, tournamentActive, matches, courtsCount };
+            const state = { teams, currentRound, tournamentActive, matches, courtsCount, timerState };
             if (isFirebaseActive) {
                 dbRef.set(state);
             } else {
@@ -486,6 +473,11 @@
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         courtsCount = state.courtsCount || 1;
+
+                        if (state.timerState) {
+                            timerState = state.timerState;
+                            updateTimerDisplays();
+                        }
                     }
         
                     const inputElement = document.getElementById('courts-count-input');
@@ -493,16 +485,13 @@
                         inputElement.value = courtsCount;
                         inputElement.disabled = tournamentActive;
                     }
-        
-                    // --- CORRECTIF DE SYNCHRONISATION ---
-                    // On met à jour les classements et l'écran public
+
                     renderPublicUI();
                     renderStandingsTable('standings-body');
                     buildTvSlides();
                     renderTvSlide();
                     renderHistoryPage();
-        
-                    // On ne reconstruit les terrains QUE si l'utilisateur n'est pas en train de taper dedans
+
                     if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
                         updateUI(); 
                     }
@@ -517,6 +506,7 @@
             renderPublicUI();
             buildTvSlides();
             renderTvSlide();
+            renderHistoryPage();
         }
 
         let tvInterval = null;
@@ -532,9 +522,7 @@
 
         function openInNewTab(view) {
             const cleanUrl = window.location.origin + window.location.pathname;
-            // Ajoute dynamiquement le bon paramètre (?view=results, ?view=tv, etc.)
             const targetUrl = `${cleanUrl}?view=${view}`;
-            
             window.open(targetUrl, '_blank');
         }
 
@@ -544,7 +532,7 @@
             document.getElementById('view-admin').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
-            document.getElementById('view-history').className = 'hidden'; // Cache le nouvel écran
+            document.getElementById('view-history').className = 'hidden';
             
             const cleanUrl = window.location.origin + window.location.pathname;
             
@@ -558,40 +546,26 @@
                 renderPublicUI();
             } else if (view === 'tv') {
                 window.history.pushState({view: 'tv'}, '', `${cleanUrl}?view=tv`);
-                document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
+                document.getElementById('view-tv').className = 'flex flex-col justify-between p-6 min-h-screen bg-gray-950 text-white';
                 startTvCarousel();
-            } else if (view === 'history') { // Gère la navigation vers l'historique
+            } else if (view === 'history') {
                 window.history.pushState({view: 'history'}, '', `${cleanUrl}?view=history`);
                 document.getElementById('view-history').className = 'block';
                 renderHistoryPage();
             }
         }
         
-        // Gestion des boutons Précédent / Suivant du navigateur
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. On récupère le paramètre ?view=... dans l'URL
+            loadTimerState();
+            updateTimerDisplays();
+
             const params = new URLSearchParams(window.location.search);
             const viewParam = params.get('view');
             
-            if (tvInterval) { clearInterval(tvInterval); tvInterval = null; }
-            
-            document.getElementById('view-admin').className = 'hidden';
-            document.getElementById('view-public').className = 'hidden';
-            document.getElementById('view-tv').className = 'hidden';
-            document.getElementById('view-history').className = 'hidden';
-        
-            if (viewParam === 'results') {
-                document.getElementById('view-public').className = 'block';
-                renderPublicUI();
-            } else if (viewParam === 'tv') {
-                document.getElementById('view-tv').className = 'flex flex-col justify-between p-6';
-                startTvCarousel();
-            } else if (viewParam === 'history') {
-                document.getElementById('view-history').className = 'block';
-                renderHistoryPage();
+            if (viewParam) {
+                navigateToView(viewParam);
             } else {
-                document.getElementById('view-admin').className = 'block';
-                updateUI();
+                navigateToView('admin');
             }
         });
 
@@ -649,7 +623,8 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(evt) {
-                const rows = XLSX.utils.sheet_to_json(XLSX.read(evt.target.result, { type: 'binary' }).Sheets[workbook.SheetNames[0]], { header: 1 });
+                const workbook = XLSX.read(evt.target.result, { type: 'binary' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
                 rows.forEach(row => {
                     if (row && row[0]) {
                         const name = row[0].toString().trim();
@@ -668,7 +643,6 @@
             saveState();
         }
 
-        // --- ALGORITHME DE BRASSAGE SIMPLIFIÉ (Pour exemple fonctionnel) ---
         function startTournament() {
             if (teams.length < 2) return;
             tournamentActive = true;
@@ -678,16 +652,13 @@
         }
 
         function nextRound() {
-            // 1. Si Firebase est actif, on fait une lecture immédiate et propre de la base
             if (isFirebaseActive && dbRef) {
                 dbRef.once('value').then(snapshot => {
                     const data = snapshot.val();
                     if (data && data.matches) {
-                        // On synchronise de force le tableau local avec les vraies données Firebase
                         matches = data.matches;
                         verifierEtPasserALaRondeSuivante();
                     } else {
-                        // Sécurité si pas de données
                         verifierEtPasserALaRondeSuivante();
                     }
                 }).catch(err => {
@@ -695,14 +666,11 @@
                     verifierEtPasserALaRondeSuivante();
                 });
             } else {
-                // Mode LocalStorage standard
                 verifierEtPasserALaRondeSuivante();
             }
         }
         
-        // Découpage de la logique de vérification pour la rendre infaillible
         function verifierEtPasserALaRondeSuivante() {
-            // 1. Filtrer les matchs de la ronde actuelle
             const currentRoundMatches = matches.filter(m => parseInt(m.round, 10) === parseInt(currentRound, 10));
         
             if (currentRoundMatches.length === 0) {
@@ -710,24 +678,18 @@
                 return;
             }
         
-            // 2. CORRECTION : On ne vérifie que les matchs REELS joués sur un VRAI terrain (court > 0)
             const matchIncomplet = currentRoundMatches.find(m => {
-                // Ignorer les exempts ET ignorer les matchs fantômes sans terrain affecté
                 if (m.isBye || !m.court || m.court <= 0) return false; 
-        
                 const scoreAValid = m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "" && !isNaN(parseInt(m.scoreA, 10));
                 const scoreBValid = m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "" && !isNaN(parseInt(m.scoreB, 10));
-        
                 return !scoreAValid || !scoreBValid;
             });
         
-            // 3. Si un VRAI match sur le terrain est incomplet, on informe l'admin
             if (matchIncomplet) {
                 alert(`Impossible de passer à la ronde suivante !\n\nLe match du Terrain ${matchIncomplet.court} (${matchIncomplet.teamA} vs ${matchIncomplet.teamB}) n'a pas encore ses deux scores.`);
                 return;
             }
         
-            // 4. Clôture uniquement des vrais matchs de la ronde
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court > 0) {
                     m.scoreA = parseInt(m.scoreA, 10);
@@ -736,27 +698,17 @@
                 }
             });
         
-            // 5. Passage à la ronde suivante
             currentRound = parseInt(currentRound, 10) + 1;
-        
-            // 6. Sauvegarde
-            if (isFirebaseActive && dbRef) {
-                dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
-            } else {
-                localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
-            }
-        
-            // 7. Génération de la ronde suivante
+            saveState();
             generateRound();
         }
 
         function generateRound() {
-            // 1. Calcul des statistiques de chaque équipe pour établir le classement Suisse
             const stats = teams.map(teamName => {
                 let wins = 0;
                 let pointsDiff = 0;
                 let pointsFor = 0;
-                let roundsWaiting = 0; // Compteur pour donner la priorité à ceux qui ont attendu
+                let roundsWaiting = 0;
         
                 matches.filter(m => m.played && !m.isBye).forEach(m => {
                     if (m.teamA === teamName) {
@@ -770,7 +722,6 @@
                     }
                 });
         
-                // Vérifier si l'équipe a dû attendre lors de la DERNIÈRE ronde jouée (court === 0)
                 const lastRound = currentRound - 1;
                 if (lastRound > 0) {
                     const hadNoCourtLastRound = matches.some(m => 
@@ -781,24 +732,16 @@
                     if (hadNoCourtLastRound) roundsWaiting = 1;
                 }
         
-                return {
-                    name: teamName,
-                    wins: wins,
-                    pointsDiff: pointsDiff,
-                    pointsFor: pointsFor,
-                    roundsWaiting: roundsWaiting
-                };
+                return { name: teamName, wins, pointsDiff, pointsFor, roundsWaiting };
             });
         
-            // 2. Tri : Priorité ABSOLUE à ceux qui ont attendu, puis classement Suisse (Victoires > Diff > Points)
             stats.sort((a, b) => {
-                if (b.roundsWaiting !== a.roundsWaiting) return b.roundsWaiting - a.roundsWaiting; // Priorité attente
+                if (b.roundsWaiting !== a.roundsWaiting) return b.roundsWaiting - a.roundsWaiting;
                 if (b.wins !== a.wins) return b.wins - a.wins;
                 if (b.pointsDiff !== a.pointsDiff) return b.pointsDiff - a.pointsDiff;
                 return b.pointsFor - a.pointsFor;
             });
         
-            // 3. Récupérer l'historique des duels passés
             const pastOpponents = {};
             teams.forEach(t => pastOpponents[t] = new Set());
             matches.filter(m => m.played && !m.isBye).forEach(m => {
@@ -809,7 +752,6 @@
             let availableTeams = [...stats.map(s => s.name)];
             const newPairings = [];
         
-            // 4. Gestion de l'exempt (Bye) SI nombre TOTAL d'équipes impair
             if (availableTeams.length % 2 !== 0) {
                 let byeCandidateIndex = availableTeams.length - 1;
                 while (byeCandidateIndex >= 0) {
@@ -834,7 +776,6 @@
                 });
             }
         
-            // 5. Appariement Suisse des équipes
             while (availableTeams.length >= 2) {
                 const teamA = availableTeams.shift();
                 let opponentIndex = -1;
@@ -847,18 +788,14 @@
                 }
         
                 if (opponentIndex === -1) opponentIndex = 0;
-        
                 const teamB = availableTeams.splice(opponentIndex, 1)[0];
                 newPairings.push({ teamA, teamB });
             }
         
-            // 6. Distribution sur les terrains physiques disponibles
             let currentCourt = 1;
             newPairings.forEach(pair => {
                 if (!pair.isBye) {
-                    // Si on dépasse le nombre de terrains réels, court = 0 (En attente)
                     const assignedCourt = currentCourt <= courtsCount ? currentCourt : 0;
-        
                     matches.push({
                         id: `R${currentRound}_C${assignedCourt}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
                         round: currentRound,
@@ -870,110 +807,57 @@
                         played: false,
                         isBye: false
                     });
-        
                     if (assignedCourt > 0) currentCourt++;
                 } else {
                     matches.push(pair);
                 }
             });
         
-            // 7. Sauvegarde & Rendu
-            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof dbRef !== 'undefined' && dbRef) {
-                dbRef.set({ teams, currentRound, tournamentActive, matches, courtsCount });
-            } else {
-                localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
-            }
-        
-            if (typeof renderAll === 'function') {
-                renderAll();
-            }
+            saveState();
+            refreshActiveView();
         }
 
-        // --- SAISIE ET VALIDATION DYNAMIQUE DES SCORES ---
         function updateMatchScore(matchId, field, value) {
             const match = matches.find(m => m.id === matchId);
             if (match) {
-                // Mise à jour locale immédiate (0 reste 0, les champs vides deviennent null)
                 match[field] = value === "" ? null : parseInt(value, 10);
-                
-                // ON SUPPRIME LE BASCULEMENT AUTOMATIQUE À PLAYED = TRUE ICI.
-                // Le match reste "En cours" pendant que l'admin saisit les scores.
-        
-                // 1. Sauvegarde dans Firebase ou LocalStorage
-                if (isFirebaseActive && dbRef) {
-                    const state = { teams, currentRound, tournamentActive, matches, courtsCount };
-                    dbRef.set(state); // Envoi direct sans passer par saveState() pour éviter les boucles
-                } else {
-                    localStorage.setItem('volley_tournament_state', JSON.stringify({ teams, currentRound, tournamentActive, matches, courtsCount }));
-                }
-        
-                // 2. Mise à jour immédiate des autres écrans (sans toucher aux inputs du terrain actuel)
-                renderPublicUI();
-                renderStandingsTable('standings-body');
-                buildTvSlides();
-                renderTvSlide();
+                saveState();
             }
         }
 
-        // --- CALCUL DU CLASSEMENT UNIFORMISÉ ---
         function computeStandings() {
             let table = {};
-            
-            // 1. Initialisation
-            teams.forEach(t => {
-                table[t] = { pts: 0, played: 0, won: 0, lost: 0, diff: 0 };
-            });
+            teams.forEach(t => { table[t] = { pts: 0, played: 0, won: 0, lost: 0, diff: 0 }; });
         
             matches.forEach(m => {
                 if (!m.played) return;
-        
-                // On garantit que l'équipe existe dans la table
                 if (m.teamA && !table[m.teamA]) table[m.teamA] = { pts: 0, played: 0, won: 0, lost: 0, diff: 0 };
                 if (m.teamB && !table[m.teamB]) table[m.teamB] = { pts: 0, played: 0, won: 0, lost: 0, diff: 0 };
         
-                // Cas de l'exempt / Bye
                 if (m.isBye) {
-                    if (table[m.teamA]) { 
-                        table[m.teamA].pts += 3; 
-                        table[m.teamA].played += 1; 
-                        table[m.teamA].won += 1; 
-                    }
+                    if (table[m.teamA]) { table[m.teamA].pts += 3; table[m.teamA].played += 1; table[m.teamA].won += 1; }
                     return;
                 }
         
-                // Conversion explicite des scores en NOMBRES
                 const scoreA = Number(m.scoreA) || 0;
                 const scoreB = Number(m.scoreB) || 0;
         
-                // Mise à jour des matchs joués
                 table[m.teamA].played += 1;
                 table[m.teamB].played += 1;
-        
-                // Différence de points
                 table[m.teamA].diff += (scoreA - scoreB);
                 table[m.teamB].diff += (scoreB - scoreA);
         
-                // Attributions des victoires / défaites / points
                 if (scoreA > scoreB) {
-                    table[m.teamA].pts += 3;
-                    table[m.teamA].won += 1;
-        
-                    table[m.teamB].pts += 1;
-                    table[m.teamB].lost += 1;
+                    table[m.teamA].pts += 3; table[m.teamA].won += 1;
+                    table[m.teamB].pts += 1; table[m.teamB].lost += 1;
                 } else if (scoreB > scoreA) {
-                    table[m.teamB].pts += 3;
-                    table[m.teamB].won += 1;
-        
-                    table[m.teamA].pts += 1;
-                    table[m.teamA].lost += 1;
+                    table[m.teamB].pts += 3; table[m.teamB].won += 1;
+                    table[m.teamA].pts += 1; table[m.teamA].lost += 1;
                 } else {
-                    // En cas d'égalité si autorisée
-                    table[m.teamA].pts += 2;
-                    table[m.teamB].pts += 2;
+                    table[m.teamA].pts += 2; table[m.teamB].pts += 2;
                 }
             });
         
-            // Retourne le tableau trié
             return Object.keys(table).map(name => ({
                 name,
                 pts: table[name].pts,
@@ -987,7 +871,6 @@
         function updateUI() {
             document.getElementById('team-count-badge').innerText = `${teams.length} Équipe(s)`; 
             
-            // Bouton ronde suivante réactivité
             const nextRoundBtn = document.getElementById('next-round-btn');
             if (nextRoundBtn) {
                 nextRoundBtn.disabled = !tournamentActive;
@@ -1037,16 +920,8 @@
         
             courtsGrid.innerHTML = '';
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
+            const allTournamentTeams = teams;
         
-            // Extraction des équipes présentes
-            const allTeamsSet = new Set();
-            matches.forEach(m => {
-                if (m.teamA) allTeamsSet.add(m.teamA);
-                if (m.teamB) allTeamsSet.add(m.teamB);
-            });
-            const allTournamentTeams = Array.from(allTeamsSet);
-        
-            // Identification des équipes actives
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court >= 1 && m.court <= courtsCount) {
@@ -1054,10 +929,9 @@
                     activeTeamsInRound.add(m.teamB);
                 }
             });
-        
-            // Gestion des arbitres
+
             let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
-        
+
             for (let i = 1; i <= courtsCount; i++) {
                 const match = currentRoundMatches.find(m => m.court === i);
                 let courtHtml = `
@@ -1071,20 +945,12 @@
                 `;
         
                 if (match) {
-                    let refereeName;
-                    if (availableReferees.length === 0) {
-                        refereeName = `Auto (${match.teamA})`;
-                    } else {
-                        refereeName = availableReferees[(i - 1) % availableReferees.length];
-                    }
-        
-                    // Affiche la valeur numérique (même 0), ou vide si null
+                    let refereeName = availableReferees.length === 0 ? `Auto (${match.teamA})` : availableReferees[(i - 1) % availableReferees.length];
                     const valA = (typeof match.scoreA === 'number') ? match.scoreA : '';
                     const valB = (typeof match.scoreB === 'number') ? match.scoreB : '';
         
                     courtHtml += `
                         <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
-                        
                         <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
                             <span class="text-right flex-1">${match.teamA}</span>
                             <span class="text-xs text-gray-300 font-normal px-1">VS</span>
@@ -1113,9 +979,7 @@
             if (!body) return;
         
             const standings = computeStandings();
-        
             if (standings.length === 0) {
-                // Colspan ajusté à 6 pour couvrir les 6 colonnes
                 body.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">Aucune donnée disponible</td></tr>`;
                 return;
             }
@@ -1149,16 +1013,8 @@
         
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             let html = "";
+            const allTournamentTeams = teams;
         
-            // 1. Extraction de toutes les équipes
-            const allTeamsSet = new Set();
-            matches.forEach(m => {
-                if (m.teamA) allTeamsSet.add(m.teamA);
-                if (m.teamB) allTeamsSet.add(m.teamB);
-            });
-            const allTournamentTeams = Array.from(allTeamsSet);
-        
-            // 2. Identification des équipes en train de jouer sur les terrains 1 à courtsCount
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court >= 1 && m.court <= courtsCount) {
@@ -1167,9 +1023,7 @@
                 }
             });
             
-            // 3. Récupération des équipes au repos
             let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
-        
             const totalCourtsToShow = Math.max(1, courtsCount || 1);
         
             for (let c = 1; c <= totalCourtsToShow; c++) {
@@ -1177,14 +1031,7 @@
                 if (m) {
                     const displayScoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
                     const displayScoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
-        
-                    // CORRECTION AUTO-ARBITRAGE : Si pas d'arbitre disponible au repos
-                    let refereeName;
-                    if (availableReferees.length === 0) {
-                        refereeName = `Auto-arbitrage`;
-                    } else {
-                        refereeName = availableReferees[(c - 1) % availableReferees.length];
-                    }
+                    let refereeName = availableReferees.length === 0 ? `Auto-arbitrage` : availableReferees[(c - 1) % availableReferees.length];
         
                     html += `
                         <div class="border border-gray-100 rounded-xl p-4 bg-gray-50 flex flex-col justify-between shadow-inner">
@@ -1214,7 +1061,6 @@
             const container = document.getElementById('history-page-container');
             if (!container) return;
         
-            // Filtre les matchs terminés (en excluant les exempts)
             const playedMatches = matches.filter(m => m.played && !m.isBye);
         
             if (playedMatches.length === 0) {
@@ -1222,7 +1068,6 @@
                 return;
             }
         
-            // Regroupement par ronde décroissante
             const matchesByRound = {};
             playedMatches.forEach(m => {
                 if (!matchesByRound[m.round]) matchesByRound[m.round] = [];
@@ -1263,7 +1108,6 @@
             container.innerHTML = html;
         }
         
-        // --- CAROUSEL TV REFAIT ET COMPATIBLE ---
         function startTvCarousel() {
             currentTvIndex = 0;
             buildTvSlides();
@@ -1285,16 +1129,8 @@
             }
         
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
+            const allTournamentTeams = teams;
         
-            // 1. Identification de toutes les équipes
-            const allTeamsSet = new Set();
-            matches.forEach(m => {
-                if (m.teamA) allTeamsSet.add(m.teamA);
-                if (m.teamB) allTeamsSet.add(m.teamB);
-            });
-            const allTournamentTeams = Array.from(allTeamsSet);
-        
-            // 2. Équipes qui jouent dans cette ronde sur un terrain actif
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
@@ -1303,29 +1139,15 @@
                 }
             });
         
-            // 3. Équipes disponibles pour arbitrer (au repos)
             const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
-            // 4. Filtrer uniquement les matchs sur un vrai terrain et leur associer l'arbitre
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
-                    let refereeName;
-                    if (availableReferees.length === 0) {
-                        refereeName = `Auto (${m.teamA})`;
-                    } else {
-                        // Attribution basée sur le numéro de terrain
-                        refereeName = availableReferees[(m.court - 1) % availableReferees.length];
-                    }
-        
-                    tvSlides.push({ 
-                        type: 'match', 
-                        data: m,
-                        referee: refereeName 
-                    });
+                    let refereeName = availableReferees.length === 0 ? `Auto (${m.teamA})` : availableReferees[(m.court - 1) % availableReferees.length];
+                    tvSlides.push({ type: 'match', data: m, referee: refereeName });
                 }
             });
         
-            // 5. Slide pour les équipes exemptes
             const exempts = currentRoundMatches.filter(m => m.isBye);
             if (exempts.length > 0) {
                 tvSlides.push({ type: 'exempt', data: exempts });
@@ -1344,10 +1166,8 @@
             if (currentTvIndex >= tvSlides.length) currentTvIndex = 0;
             
             const slide = tvSlides[currentTvIndex];
-        
             container.style.opacity = '0';
-            container.style.transform = 'scale(0.97)';
-        
+
             setTimeout(() => {
                 if (slide.type === 'empty') {
                     container.innerHTML = `
@@ -1359,13 +1179,11 @@
                 else if (slide.type === 'match') {
                     const m = slide.data;
                     const referee = slide.referee || 'Auto';
-        
                     const scoreA = (m.scoreA !== null && m.scoreA !== undefined && m.scoreA !== "") ? m.scoreA : '-';
                     const scoreB = (m.scoreB !== null && m.scoreB !== undefined && m.scoreB !== "") ? m.scoreB : '-';
         
                     container.innerHTML = `
                         <div class="text-center flex flex-col justify-between h-full space-y-4 py-2">
-                            <!-- TERRAIN ET ARBITRE -->
                             <div class="flex flex-col items-center gap-2">
                                 <div class="bg-amber-400 text-gray-950 font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl shadow-lg uppercase">
                                      TERRAIN ${m.court}
@@ -1375,28 +1193,22 @@
                                 </div>
                             </div>
                             
-                            <!-- BLOC MATCH & SCORES -->
                             <div class="flex items-center justify-center gap-2 sm:gap-4 w-full my-auto">
                                 <div class="flex-1 text-right text-xl sm:text-3xl font-extrabold truncate text-white">
                                     ${m.teamA}
                                 </div>
-                                
                                 <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
                                     ${scoreA}
                                 </div>
-                                
                                 <div class="text-gray-500 font-bold text-sm sm:text-base px-1">VS</div>
-                                
                                 <div class="min-w-[50px] sm:min-w-[70px] text-center font-black text-3xl sm:text-5xl text-amber-400 font-mono bg-gray-950/60 py-2 px-3 rounded-2xl border border-gray-800">
                                     ${scoreB}
                                 </div>
-                                
                                 <div class="flex-1 text-left text-xl sm:text-3xl font-extrabold truncate text-white">
                                     ${m.teamB}
                                 </div>
                             </div>
                             
-                            <!-- STATUT -->
                             <div class="text-xs sm:text-sm font-bold tracking-widest uppercase">
                                 ${m.played ? '<span class="text-emerald-400">Terminé</span>' : '<span class="text-amber-400 animate-pulse">En cours</span>'}
                             </div>
@@ -1418,99 +1230,68 @@
                         <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
                     `).join('');
                 }
-        
                 container.style.opacity = '1';
-                container.style.transform = 'scale(1)';
             }, 200);
         }
 
-        // --- VARIABLES ET ÉTAT DU TIMER ---
+        // --- GESTION DU TIMER ---
         let timerInterval = null;
         let timerState = {
-            durationMinutes: 00, // Durée par défaut
-            remainingSeconds: 00 * 60,
+            durationMinutes: 15,
+            remainingSeconds: 15 * 60,
             isRunning: false
         };
         
-        // Initialisation au chargement de la page
-        document.addEventListener('DOMContentLoaded', () => {
-            loadTimerState();
-            updateTimerDisplays();
-            
-            // Si le timer était en train de tourner lors d'un rafraîchissement
-            if (timerState.isRunning) {
-                startTimerLoop();
-            }
-        });
-        
-        // Lancer / Reprendre le chrono
         function startTimer() {
             if (timerState.isRunning) return;
-        
-            // Si le chrono est à 0, recharger depuis l'input
             if (timerState.remainingSeconds <= 0) {
-                const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 00;
+                const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 15;
                 timerState.durationMinutes = inputMin;
                 timerState.remainingSeconds = inputMin * 60;
             }
-        
             timerState.isRunning = true;
-            saveTimerState();
+            saveState();
             startTimerLoop();
         }
         
-        // Mettre en pause
         function pauseTimer() {
             timerState.isRunning = false;
             clearInterval(timerInterval);
-            saveTimerState();
+            saveState();
         }
         
-        // Réinitialiser
         function resetTimer() {
             pauseTimer();
-            const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 00;
+            const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 15;
             timerState.durationMinutes = inputMin;
             timerState.remainingSeconds = inputMin * 60;
-            saveTimerState();
+            saveState();
             updateTimerDisplays();
         }
         
-        // Boucle principale du compte à rebours
         function startTimerLoop() {
             clearInterval(timerInterval);
-            
             timerInterval = setInterval(() => {
                 if (!timerState.isRunning) {
                     clearInterval(timerInterval);
                     return;
                 }
-        
                 if (timerState.remainingSeconds > 0) {
                     timerState.remainingSeconds--;
                     updateTimerDisplays();
-                    
-                    // Sauvegarde régulière pour la synchro
-                    if (timerState.remainingSeconds % 5 === 0) {
-                        saveTimerState();
-                    }
+                    if (timerState.remainingSeconds % 5 === 0) saveState();
                 } else {
-                    // Fin du temps
                     timerState.isRunning = false;
                     clearInterval(timerInterval);
-                    saveTimerState();
+                    saveState();
                     updateTimerDisplays();
-                    onTimerFinished();
                 }
             }, 1000);
         }
         
-        // Mise à jour visuelle des textes (MM:SS)
         function updateTimerDisplays() {
             const minutes = Math.floor(timerState.remainingSeconds / 60);
             const seconds = timerState.remainingSeconds % 60;
-            
-            // Format "05:09"
             const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         
             const adminDisplay = document.getElementById('adminTimerDisplay');
@@ -1518,44 +1299,17 @@
         
             if (adminDisplay) adminDisplay.textContent = formattedTime;
             if (publicDisplay) publicDisplay.textContent = formattedTime;
-        
-            // Style visuel alerte si moins de 1 minute
-            if (publicDisplay) {
-                if (timerState.remainingSeconds <= 60 && timerState.remainingSeconds > 0) {
-                    publicDisplay.classList.add('text-rose-400', 'animate-pulse');
-                    publicDisplay.classList.remove('text-white');
-                } else {
-                    publicDisplay.classList.remove('text-rose-400', 'animate-pulse');
-                    publicDisplay.classList.add('text-white');
-                }
-            }
-        }
-        
-        // Action en fin de temps (Optionnel : alerte sonore / visuelle)
-        function onTimerFinished() {
-            const publicDisplay = document.getElementById('publicTimerDisplay');
-            if (publicDisplay) {
-                publicDisplay.textContent = "FIN DE RONDE !";
-            }
-        }
-        
-        // --- SAUVEGARDE & SYNCHRONISATION ---
-        function saveTimerState() {
-            // Si tu utilises Firebase
-            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof dbRef !== 'undefined' && dbRef) {
-                dbRef.child('timer').set(timerState);
-            } else {
-                // Sinon LocalStorage
-                localStorage.setItem('volley_timer_state', JSON.stringify(timerState));
-            }
         }
         
         function loadTimerState() {
-            const saved = localStorage.getItem('volley_timer_state');
+            const saved = localStorage.getItem('volley_tournament_state');
             if (saved) {
                 try {
-                    timerState = JSON.parse(saved);
-                    document.getElementById('timerInput').value = timerState.durationMinutes || 00;
+                    const parsed = JSON.parse(saved);
+                    if (parsed.timerState) {
+                        timerState = parsed.timerState;
+                        document.getElementById('timerInput').value = timerState.durationMinutes || 15;
+                    }
                 } catch(e) { console.error(e); }
             }
         }
