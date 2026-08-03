@@ -445,6 +445,15 @@
         let matches = [];
         let courtsCount = 1;
 
+        // --- GESTION DU TIMER AVEC HORODATAGE ENDTIME ---
+        let localTimerInterval = null;
+        let timerState = {
+            durationMinutes: 15,
+            remainingSeconds: 15 * 60,
+            isRunning: false,
+            endTime: null
+        };
+
         // Sauvegarde centralisée
         function saveState() {
             const state = { teams, currentRound, tournamentActive, matches, courtsCount, timerState };
@@ -476,7 +485,12 @@
 
                         if (state.timerState) {
                             timerState = state.timerState;
-                            updateTimerDisplays();
+                            if (timerState.isRunning && timerState.endTime) {
+                                startLocalTimerLoop();
+                            } else {
+                                stopLocalTimerLoop();
+                                updateTimerDisplays();
+                            }
                         }
                     }
         
@@ -489,7 +503,6 @@
                     renderPublicUI();
                     renderStandingsTable('standings-body');
                     buildTvSlides();
-                    renderTvSlide();
                     renderHistoryPage();
 
                     if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
@@ -527,10 +540,8 @@
         }
 
         function navigateToView(view) {
-            // 1. Nettoyage complet des carrousels et des chronos (TV)
             stopTvCarousel();
         
-            // 2. Masquage de toutes les vues
             document.getElementById('view-admin').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
@@ -538,7 +549,6 @@
         
             const cleanUrl = window.location.origin + window.location.pathname;
         
-            // 3. Gestion sécurisée de l'historique d'URL
             try {
                 if (view === 'admin') {
                     window.history.pushState({view: 'admin'}, '', cleanUrl);
@@ -549,7 +559,6 @@
                 console.warn("pushState non supporté en mode fichier local (file://)");
             }
         
-            // 4. Affichage et initialisation de la vue demandée
             if (view === 'admin') {
                 document.getElementById('view-admin').className = 'block';
                 updateUI();
@@ -597,6 +606,7 @@
         function globalReset() {
             if (confirm("🚨 Voulez-vous TOUT réinitialiser ?")) {
                 teams = []; currentRound = 1; tournamentActive = false; matches = []; courtsCount = 1;
+                timerState = { durationMinutes: 15, remainingSeconds: 15 * 60, isRunning: false, endTime: null };
                 localStorage.removeItem('volley_tournament_state');
                 if (isFirebaseActive && dbRef) { saveState(); } else { refreshActiveView(); }
             }
@@ -1118,53 +1128,25 @@
             container.innerHTML = html;
         }
         
-        let tvTimerInterval = null; // Ajout d'une variable pour le chrono
-        
+        // --- LOGIQUE CARROUSEL TV ---
         function startTvCarousel() {
-            // 1. Nettoyage complet des anciens timers
             stopTvCarousel();
         
-            // 2. Préparation du contenu
             buildTvSlides();
             renderTvSlide();
         
-            // 3. Mise à jour IMMÉDIATE du chrono dès l'ouverture
-            updateTvChronometer();
-        
-            // 4. Rotation des diapositives (toutes les 5 sec)
             tvInterval = setInterval(() => {
                 if (tvSlides.length > 1) {
                     currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
                     renderTvSlide();
-                    // Re-forcer la mise à jour du chrono si le HTML de la slide vient d'être réinjecté
-                    updateTvChronometer(); 
                 }
             }, 5000);
-        
-            // 5. Cadence du chrono (toutes les 1 sec)
-            tvTimerInterval = setInterval(() => {
-                updateTvChronometer();
-            }, 1000);
-        }
-
-        function updateTvChronometer() {
-            const timerElement = document.getElementById('publicTimerDisplay');
-            if (!timerElement) return;
-        
-            const minutes = Math.floor(timerState.remainingSeconds / 60);
-            const seconds = timerState.remainingSeconds % 60;
-            
-            timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
         function stopTvCarousel() {
             if (tvInterval) {
                 clearInterval(tvInterval);
                 tvInterval = null;
-            }
-            if (tvTimerInterval) {
-                clearInterval(tvTimerInterval);
-                tvTimerInterval = null;
             }
         }
 
@@ -1209,7 +1191,6 @@
             const roundLabel = document.getElementById('tv-round-label');
             if (roundLabel) roundLabel.innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
         
-            // Sécurité si les slides ne sont pas encore construites
             if (!tvSlides || tvSlides.length === 0) {
                 tvSlides = [{ type: 'empty', title: 'Attente du tournoi' }];
             }
@@ -1218,7 +1199,6 @@
             
             const slide = tvSlides[currentTvIndex];
         
-            // On injecte DIRECTEMENT le contenu (sans opacity = 0 et sans setTimeout)
             if (slide.type === 'empty') {
                 container.innerHTML = `
                     <div class="text-center py-12">
@@ -1281,33 +1261,64 @@
                 `).join('');
             }
         
-            // On s'assure qu'il est bien visible
             container.style.opacity = '1';
         }
 
-        // --- GESTION DU TIMER ---
-        let timerInterval = null;
-        let timerState = {
-            durationMinutes: 15,
-            remainingSeconds: 15 * 60,
-            isRunning: false
-        };
+        // --- NOUVELLE GESTION UNIFIÉE DU CHRONOMÈTRE LOCAL + FIREBASE ---
         
-        function startTimer() {
-            if (timerState.isRunning) return;
-            if (timerState.remainingSeconds <= 0) {
-                const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 15;
-                timerState.durationMinutes = inputMin;
-                timerState.remainingSeconds = inputMin * 60;
+        function startLocalTimerLoop() {
+            if (localTimerInterval) clearInterval(localTimerInterval);
+
+            // Mise à jour immédiate à l'entrée
+            calculateAndUpdateTime();
+
+            localTimerInterval = setInterval(() => {
+                calculateAndUpdateTime();
+            }, 1000);
+        }
+
+        function stopLocalTimerLoop() {
+            if (localTimerInterval) {
+                clearInterval(localTimerInterval);
+                localTimerInterval = null;
             }
+        }
+
+        function calculateAndUpdateTime() {
+            if (timerState.isRunning && timerState.endTime) {
+                const now = Date.now();
+                const remainingMs = timerState.endTime - now;
+                timerState.remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+
+                if (timerState.remainingSeconds <= 0) {
+                    timerState.isRunning = false;
+                    stopLocalTimerLoop();
+                }
+            }
+            updateTimerDisplays();
+        }
+
+        function startTimer() {
+            const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 15;
+            let secondsToRun = timerState.remainingSeconds;
+
+            if (secondsToRun <= 0) {
+                secondsToRun = inputMin * 60;
+            }
+
+            timerState.durationMinutes = inputMin;
+            timerState.remainingSeconds = secondsToRun;
             timerState.isRunning = true;
+            timerState.endTime = Date.now() + (secondsToRun * 1000);
+
             saveState();
-            startTimerLoop();
+            startLocalTimerLoop();
         }
         
         function pauseTimer() {
             timerState.isRunning = false;
-            clearInterval(timerInterval);
+            timerState.endTime = null;
+            stopLocalTimerLoop();
             saveState();
         }
         
@@ -1316,28 +1327,9 @@
             const inputMin = parseInt(document.getElementById('timerInput').value, 10) || 15;
             timerState.durationMinutes = inputMin;
             timerState.remainingSeconds = inputMin * 60;
+            timerState.endTime = null;
             saveState();
             updateTimerDisplays();
-        }
-        
-        function startTimerLoop() {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                if (!timerState.isRunning) {
-                    clearInterval(timerInterval);
-                    return;
-                }
-                if (timerState.remainingSeconds > 0) {
-                    timerState.remainingSeconds--;
-                    updateTimerDisplays();
-                    if (timerState.remainingSeconds % 5 === 0) saveState();
-                } else {
-                    timerState.isRunning = false;
-                    clearInterval(timerInterval);
-                    saveState();
-                    updateTimerDisplays();
-                }
-            }, 1000);
         }
         
         function updateTimerDisplays() {
@@ -1360,6 +1352,9 @@
                     if (parsed.timerState) {
                         timerState = parsed.timerState;
                         document.getElementById('timerInput').value = timerState.durationMinutes || 15;
+                        if (timerState.isRunning && timerState.endTime) {
+                            startLocalTimerLoop();
+                        }
                     }
                 } catch(e) { console.error(e); }
             }
