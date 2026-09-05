@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration - Tournoi Volley Casson</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 0 10px; }
+    .section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>Administration du Tournoi</h1>
+
+  <!-- Zone de connexion par e-mail -->
+  <div id="section-connexion" class="section">
+    <h2>Connexion Admin</h2>
+    <p>Saisis ton e-mail pour recevoir un lien de connexion :</p>
+    <input type="email" id="email-admin" placeholder="ton.email@exemple.com" style="width: 70%; padding: 8px;">
+    <button id="btn-envoyer-lien" style="padding: 8px;">Recevoir le lien</button>
+  </div>
+
+  <!-- Zone du panneau de contrôle (Masquée par défaut) -->
+  <div id="section-admin" class="section hidden">
+    <h2>Panneau de Gestion</h2>
+    <p style="color: green;">✔ Connecté en tant qu'administrateur</p>
+    
+    <button id="btn-reinitialiser" style="background-color: red; color: white; padding: 10px;">
+      Réinitialiser tous les matchs
+    </button>
+    
+    <!-- Tu pourras ajouter tes formulaires de création de match ici -->
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      sendSignInLinkToEmail, 
+      isSignInWithEmailLink, 
+      signInWithEmailLink,
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 1. Colle ici la MEME configuration Firebase que dans ton index.html
+    const firebaseConfig = {
+      apiKey: "TON_API_KEY",
+      authDomain: "TON_PROJET.firebaseapp.com",
+      databaseURL: "https://TON_PROJET.firebaseio.com",
+      projectId: "TON_PROJET",
+      storageBucket: "TON_PROJET.appspot.com",
+      messagingSenderId: "...",
+      appId: "..."
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const divConnexion = document.getElementById('section-connexion');
+    const divAdmin = document.getElementById('section-admin');
+
+    // 2. Vérification automatique lors du clic sur le lien reçu par mail
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let email = window.localStorage.getItem('emailForSignIn');
+      if (!email) {
+        email = window.prompt('Renseigne ton e-mail admin pour confirmer :');
+      }
+      signInWithEmailLink(auth, email, window.location.href)
+        .then(() => {
+          window.localStorage.removeItem('emailForSignIn');
+          // Nettoie l'URL du lien magique
+          window.history.replaceState({}, document.title, window.location.pathname);
+        })
+        .catch((err) => alert("Erreur de connexion : " + err.message));
+    }
+
+    // 3. Écouteur de l'état de connexion : Affiche/Masque les panneaux
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        divConnexion.classList.add('hidden');
+        divAdmin.classList.remove('hidden');
+      } else {
+        divConnexion.classList.remove('hidden');
+        divAdmin.classList.add('hidden');
+      }
+    });
+
+    // 4. Envoi du lien magique par mail
+    document.getElementById('btn-envoyer-lien').addEventListener('click', () => {
+      const email = document.getElementById('email-admin').value;
+      const actionCodeSettings = {
+        // Redirige directement vers la page admin lors du clic dans l'email
+        url: 'https://gwenhaduv.github.io/Tournoi-volley-casson/admin.html',
+        handleCodeInApp: true,
+      };
+
+      sendSignInLinkToEmail(auth, email, actionCodeSettings)
+        .then(() => {
+          window.localStorage.setItem('emailForSignIn', email);
+          alert('Lien de connexion envoyé ! Regarde tes e-mails.');
+        })
+        .catch((err) => alert("Erreur : " + err.message));
+    });
+
+    // 5. Action d'administration (Exemple : Réinitialiser)
+    document.getElementById('btn-reinitialiser').addEventListener('click', () => {
+      if (confirm("Attention, cela va supprimer tous les matchs ! Confirmer ?")) {
+        remove(ref(db, 'matchs'))
+          .then(() => alert("Tournoi réinitialisé avec succès !"))
+          .catch((err) => alert("Erreur de suppression : " + err.message));
+      }
+    });
+  </script>
+
+</body>
+</html>
