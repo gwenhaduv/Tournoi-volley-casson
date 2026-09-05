@@ -292,6 +292,32 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Section Admin intégrée -->
+                <section id="admin-section" style="margin-top: 40px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+                  
+                  <!-- Formulaire de connexion (affiché par défaut si non connecté) -->
+                  <div id="admin-login-form">
+                    <h3>Accès Administration</h3>
+                    <input type="email" id="email-admin" placeholder="Ton e-mail admin" style="padding: 6px;">
+                    <button id="btn-envoyer-lien" style="padding: 6px;">Connexion Admin</button>
+                  </div>
+                
+                  <!-- Panneau Admin (masqué par défaut) -->
+                  <div id="admin-panel" style="display: none;">
+                    <p style="color: green; font-weight: bold;">✔ Connecté en tant qu'administrateur</p>
+                    
+                    <!-- Met ici tes boutons de gestion -->
+                    <button id="btn-reinitialiser" style="background-color: red; color: white; padding: 8px; border: none; cursor: pointer;">
+                      Réinitialiser tous les matchs
+                    </button>
+                    
+                    <button id="btn-deconnexion" style="margin-left: 10px; padding: 8px;">
+                      Déconnexion
+                    </button>
+                  </div>
+                
+                </section>
             </div>
         </main>
     </div>
@@ -414,10 +440,26 @@
     </div>
 
     <!-- App Logic Script -->
-    <script>
-        // ==========================================
-        // CONFIGURATION FIREBASE INTEGRÉE
-        // ==========================================
+    <script type="module">
+        // 1. IMPORTATIONS FIREBASE (v10 ES Modules)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+          getAuth, 
+          sendSignInLinkToEmail, 
+          isSignInWithEmailLink, 
+          signInWithEmailLink, 
+          onAuthStateChanged, 
+          signOut 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+          getDatabase, 
+          ref, 
+          set, 
+          onValue, 
+          remove 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // 2. CONFIGURATION FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyC0jCmtlxUZPNquETfFTZK09q4-sAz9NHE",
             authDomain: "tournoi-volley-casson-2027.firebaseapp.com",
@@ -428,24 +470,80 @@
             appId: "1:1006967763633:web:e7c50558f59284291fa890"
         };
 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
         let isFirebaseActive = false;
-        let dbRef = null;
+        const dbSharedRef = ref(db, 'tournament_shared_state');
 
         if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "VOTRE_API_KEY") {
-            firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref('tournament_shared_state');
             isFirebaseActive = true;
         } else {
-            document.getElementById('firebase-alert').classList.remove('hidden');
+            document.getElementById('firebase-alert')?.classList.remove('hidden');
         }
 
+        // 3. AUTHENTIFICATION ADMIN
+        const loginForm = document.getElementById('admin-login-form');
+        const adminPanel = document.getElementById('admin-panel');
+
+        // Validation du lien magique au clic dans l'e-mail
+        if (isSignInWithEmailLink(auth, window.location.href)) {
+          let email = window.localStorage.getItem('emailForSignIn');
+          if (!email) email = window.prompt('Confirme ton e-mail admin :');
+          
+          signInWithEmailLink(auth, email, window.location.href)
+            .then(() => {
+              window.localStorage.removeItem('emailForSignIn');
+              window.history.replaceState({}, document.title, window.location.pathname);
+            })
+            .catch((err) => alert("Erreur : " + err.message));
+        }
+
+        // Gestion de l'affichage du panneau admin selon l'état de connexion
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            if (loginForm) loginForm.style.display = 'none';
+            if (adminPanel) adminPanel.style.display = 'block';
+          } else {
+            if (loginForm) loginForm.style.display = 'block';
+            if (adminPanel) adminPanel.style.display = 'none';
+          }
+        });
+
+        // Bouton "Connexion Admin" (Envoi de l'e-mail)
+        document.getElementById('btn-envoyer-lien')?.addEventListener('click', () => {
+          const emailInput = document.getElementById('email-admin');
+          const email = emailInput ? emailInput.value : '';
+          
+          sendSignInLinkToEmail(auth, email, {
+            url: 'https://gwenhaduv.github.io/Tournoi-volley-casson/',
+            handleCodeInApp: true,
+          }).then(() => {
+            window.localStorage.setItem('emailForSignIn', email);
+            alert('Lien de connexion envoyé par e-mail !');
+          }).catch((err) => alert("Erreur : " + err.message));
+        });
+
+        // Déconnexion
+        document.getElementById('btn-deconnexion')?.addEventListener('click', () => signOut(auth));
+
+        // Réinitialisation du tournoi
+        document.getElementById('btn-reinitialiser')?.addEventListener('click', () => {
+          if (confirm("Attention : supprimer tous les matchs du tournoi ?")) {
+            remove(ref(db, 'matchs'))
+              .then(() => alert("Tournoi réinitialisé !"))
+              .catch((err) => alert("Erreur : " + err.message));
+          }
+        });
+
+        // 4. ÉTAT ET SYNCHRONISATION DU TOURNOI
         let teams = [];
         let currentRound = 1;
         let tournamentActive = false;
         let matches = [];
         let courtsCount = 1;
 
-        // --- GESTION DU TIMER AVEC HORODATAGE ENDTIME ---
         let localTimerInterval = null;
         let timerState = {
             durationMinutes: 15,
@@ -458,27 +556,27 @@
         function saveState() {
             const state = { teams, currentRound, tournamentActive, matches, courtsCount, timerState };
             if (isFirebaseActive) {
-                dbRef.set(state);
+                set(dbSharedRef, state);
             } else {
                 localStorage.setItem('volley_tournament_state', JSON.stringify(state));
-                refreshActiveView();
+                if (typeof refreshActiveView === 'function') refreshActiveView();
             }
         }
 
-        // Écoute Firebase
+        // Écoute des mises à jour Realtime Database
         if (isFirebaseActive) {
-            dbRef.on('value', (snapshot) => {
+            onValue(dbSharedRef, (snapshot) => {
                 try {
                     const state = snapshot.val();
                     if (state) {
                         if (state.teams) {
                             teams = Array.isArray(state.teams) ? state.teams.filter(Boolean) : Object.values(state.teams);
                         } else { teams = []; }
-                        
+
                         if (state.matches) {
                             matches = Array.isArray(state.matches) ? state.matches.filter(Boolean) : Object.values(state.matches);
                         } else { matches = []; }
-        
+
                         currentRound = state.currentRound || 1;
                         tournamentActive = state.tournamentActive || false;
                         courtsCount = state.courtsCount || 1;
@@ -486,34 +584,34 @@
                         if (state.timerState) {
                             timerState = state.timerState;
                             if (timerState.isRunning && timerState.endTime) {
-                                startLocalTimerLoop();
+                                if (typeof startLocalTimerLoop === 'function') startLocalTimerLoop();
                             } else {
-                                stopLocalTimerLoop();
-                                updateTimerDisplays();
+                                if (typeof stopLocalTimerLoop === 'function') stopLocalTimerLoop();
+                                if (typeof updateTimerDisplays === 'function') updateTimerDisplays();
                             }
                         }
                     }
-        
+
                     const inputElement = document.getElementById('courts-count-input');
                     if (inputElement) {
                         inputElement.value = courtsCount;
                         inputElement.disabled = tournamentActive;
                     }
 
-                    renderPublicUI();
-                    renderStandingsTable('standings-body');
-                    buildTvSlides();
-                    renderHistoryPage();
+                    if (typeof renderPublicUI === 'function') renderPublicUI();
+                    if (typeof renderStandingsTable === 'function') renderStandingsTable('standings-body');
+                    if (typeof buildTvSlides === 'function') buildTvSlides();
+                    if (typeof renderHistoryPage === 'function') renderHistoryPage();
 
                     if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
-                        updateUI(); 
+                        if (typeof updateUI === 'function') updateUI(); 
                     }
                 } catch (error) {
                     console.error("Erreur de synchronisation Firebase :", error);
                 }
             });
-        }       
-
+        }
+        
         function refreshActiveView() {
             updateUI();
             renderPublicUI();
