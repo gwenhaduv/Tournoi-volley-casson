@@ -290,9 +290,6 @@
                         <i class="fa-solid fa-volleyball text-grass-500"></i> Matchs en Cours & Saisie des Scores
                     </h1>
                 </div>
-                <button onclick="navigateToView('admin')" class="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all border border-white/20 flex items-center gap-1.5">
-                    <i class="fa-solid fa-arrow-left"></i> Page principale & Classement
-                </button>
             </div>
         </header>
 
@@ -475,6 +472,29 @@
                 <div id="history-page-container" class="space-y-6">
                     <p class="text-gray-400 italic text-center py-8">Aucun match terminé pour le moment.</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ÉCRAN 5 : SAISIE DE SCORE DÉDIÉE PAR MATCH -->
+    <!-- ========================================== -->
+    <div id="view-score-entry" class="hidden min-h-screen bg-gray-100 p-4">
+        <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
+            <!-- Bouton Retour -->
+            <button onclick="navigateToView('matches')" class="text-xs text-gray-500 hover:text-gray-800 font-bold mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Retour aux terrains
+            </button>
+    
+            <!-- En-tête avec Terrain et Ronde -->
+            <div class="text-center mb-6">
+                <span id="single-match-court-badge" class="bg-grass-100 text-grass-800 font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider">Terrain -</span>
+                <p id="single-match-round" class="text-xs text-gray-400 font-semibold mt-2">Ronde -</p>
+            </div>
+    
+            <!-- Formulaire de saisie -->
+            <div id="single-match-container" class="space-y-6">
+                <!-- Injecté dynamiquement par JS -->
             </div>
         </div>
     </div>
@@ -677,27 +697,32 @@
             window.open(targetUrl, '_blank', 'noopener,noreferrer');
         }
 
-        function navigateToView(view) {
+        function navigateToView(view, matchId = null) {
             stopTvCarousel();
         
+            // Masquer toutes les vues
             document.getElementById('view-admin').className = 'hidden';
             document.getElementById('view-matches').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
             document.getElementById('view-history').className = 'hidden';
+            document.getElementById('view-score-entry').className = 'hidden';
         
             const cleanUrl = window.location.origin + window.location.pathname;
         
             try {
                 if (view === 'admin') {
                     window.history.pushState({view: 'admin'}, '', cleanUrl);
+                } else if (view === 'score-entry' && matchId) {
+                    window.history.pushState({view: 'score-entry', matchId}, '', `${cleanUrl}?view=score-entry&matchId=${matchId}`);
                 } else {
                     window.history.pushState({view: view}, '', `${cleanUrl}?view=${view}`);
                 }
             } catch (e) {
-                console.warn("pushState non supporté en mode fichier local (file://)");
+                console.warn("pushState non supporté en local");
             }
         
+            // Affichage de la vue ciblée
             if (view === 'admin') {
                 document.getElementById('view-admin').className = 'block';
                 updateUI();
@@ -713,10 +738,14 @@
             } else if (view === 'history') {
                 document.getElementById('view-history').className = 'block';
                 renderHistoryPage();
+            } else if (view === 'score-entry') {
+                document.getElementById('view-score-entry').className = 'block';
+                renderSingleMatchView(matchId);
             }
         }
         
         window.navigateToView = navigateToView;
+        window.renderSingleMatchView = renderSingleMatchView;
         window.openInNewTab = openInNewTab;
         window.switchTab = switchTab;
         window.generateSingleName = generateSingleName;
@@ -737,17 +766,66 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadTimerState();
             updateTimerDisplays();
-
+        
             const params = new URLSearchParams(window.location.search);
             const viewParam = params.get('view');
+            const matchIdParam = params.get('matchId');
             
-            if (viewParam) {
+            if (viewParam === 'score-entry' && matchIdParam) {
+                navigateToView('score-entry', matchIdParam);
+            } else if (viewParam) {
                 navigateToView(viewParam);
             } else {
                 navigateToView('admin');
             }
         });
 
+        function renderSingleMatchView(matchId) {
+            const container = document.getElementById('single-match-container');
+            const courtBadge = document.getElementById('single-match-court-badge');
+            const roundLabel = document.getElementById('single-match-round');
+        
+            const match = matches.find(m => m.id === matchId);
+        
+            if (!match) {
+                container.innerHTML = `<p class="text-center text-sm text-gray-400 py-8">Match introuvable.</p>`;
+                return;
+            }
+        
+            courtBadge.innerText = `Terrain ${match.court}`;
+            roundLabel.innerText = `Ronde ${match.round}`;
+        
+            const valA = (typeof match.scoreA === 'number') ? match.scoreA : '';
+            const valB = (typeof match.scoreB === 'number') ? match.scoreB : '';
+        
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Équipe A -->
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                        <span class="font-bold text-gray-800 text-lg flex-1 pr-2">${match.teamA}</span>
+                        <input type="number" min="0" value="${valA}" placeholder="0" 
+                            oninput="updateMatchScore('${match.id}', 'scoreA', this.value)"
+                            class="w-20 text-center py-3 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
+                    </div>
+        
+                    <div class="text-center font-bold text-gray-300 uppercase tracking-widest text-xs">VS</div>
+        
+                    <!-- Équipe B -->
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                        <span class="font-bold text-gray-800 text-lg flex-1 pr-2">${match.teamB}</span>
+                        <input type="number" min="0" value="${valB}" placeholder="0" 
+                            oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
+                            class="w-20 text-center py-3 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
+                    </div>
+        
+                    <!-- Bouton de confirmation -->
+                    <button onclick="navigateToView('matches')" class="w-full bg-grass-600 hover:bg-grass-700 text-white font-bold py-3 rounded-xl transition shadow-md mt-4">
+                        <i class="fa-solid fa-check mr-2"></i> Valider et retourner au tableau
+                    </button>
+                </div>
+            `;
+        }
+        
         function switchTab(type) {
             ['single', 'bulk', 'file'].forEach(t => {
                 document.getElementById(`tab-${t}`).className = (t === type) ? 'block space-y-4' : 'hidden';
@@ -1112,9 +1190,9 @@
                     activeTeamsInRound.add(m.teamB);
                 }
             });
-
+        
             let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
-
+        
             for (let i = 1; i <= courtsCount; i++) {
                 const match = currentRoundMatches.find(m => m.court === i);
                 let courtHtml = `
@@ -1148,6 +1226,12 @@
                                 oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                         </div>
+        
+                        <!-- BOUTON AJOUTÉ ICI -->
+                        <button onclick="navigateToView('score-entry', '${match.id}')" 
+                                class="mt-3 w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-2 border border-emerald-200">
+                            <i class="fa-solid fa-pen-to-square"></i> Ouvrir la fiche de score
+                        </button>
                     `;
                 } else {
                     courtHtml += `<div class="py-6 text-center text-xs text-gray-400 italic">Aucun match actif</div>`;
@@ -1155,7 +1239,7 @@
                 courtHtml += `</div>`;
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
-        }    
+        }
 
         function renderStandingsTable(targetId) {
             const body = document.getElementById(targetId);
