@@ -983,10 +983,23 @@
         }
 
         function updateMatchScore(matchId, field, value) {
-            const match = matches.find(m => m.id === matchId);
-            if (match) {
-                match[field] = value === "" ? null : parseInt(value, 10);
-                saveState();
+            const matchIndex = matches.findIndex(m => m.id === matchId);
+            if (matchIndex !== -1) {
+                const numericValue = value === "" ? null : parseInt(value, 10);
+                
+                // 1. Mise à jour en mémoire locale
+                matches[matchIndex][field] = numericValue;
+        
+                // 2. Envoi ciblé vers Firebase si actif
+                if (isFirebaseActive) {
+                    // On cible directement la propriété exacte dans Firebase
+                    const scoreRef = ref(db, `tournament_shared_state/matches/${matchIndex}/${field}`);
+                    set(scoreRef, numericValue).catch(err => {
+                        console.error("Erreur lors de l'enregistrement du score :", err);
+                    });
+                } else {
+                    saveState();
+                }
             }
         }
 
