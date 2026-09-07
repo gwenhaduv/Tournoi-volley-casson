@@ -69,8 +69,8 @@
                 </div>
                 
                 <div class="flex flex-col items-stretch sm:items-center gap-2">
-                    <button onclick="navigateToView('matches')" class="bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-gamepad text-white"></i> Saisie des Scores & Matchs <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    <button onclick="openInNewTab('matches')" class="bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gamepad text-white"></i> Saisie des Scores & Matchs <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                     </button>
                     <button onclick="openInNewTab('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                         <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
@@ -79,7 +79,7 @@
                         <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
                     <button onclick="openInNewTab('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition duration-200 flex items-center gap-2 text-xs">
-                        <i class="fa-solid fa-history"></i> Historique des Résultats
+                        <i class="fa-solid fa-history"></i> Historique des Résultats <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                     </button>
                 </div>
             </div>
@@ -201,8 +201,8 @@
                         </h3>
                         <p class="text-xs text-emerald-100/80 mt-1">Accédez à l'écran dédié pour afficher les terrains, saisir les scores et passer aux rondes suivantes.</p>
                     </div>
-                    <button onclick="navigateToView('matches')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-md whitespace-nowrap flex items-center gap-2">
-                        Accéder aux Matchs <i class="fa-solid fa-arrow-right"></i>
+                    <button onclick="openInNewTab('matches')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-md whitespace-nowrap flex items-center gap-2">
+                        Accéder aux Matchs <i class="fa-solid fa-arrow-up-right-from-square"></i>
                     </button>
                 </section>
             </div>
@@ -674,7 +674,7 @@
         function openInNewTab(view) {
             const cleanUrl = window.location.origin + window.location.pathname;
             const targetUrl = `${cleanUrl}?view=${view}`;
-            window.open(targetUrl, '_blank');
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
         }
 
         function navigateToView(view) {
