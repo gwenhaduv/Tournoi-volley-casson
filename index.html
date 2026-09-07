@@ -663,7 +663,14 @@
                     if (typeof buildTvSlides === 'function') buildTvSlides();
                     if (typeof renderHistoryPage === 'function') renderHistoryPage();
 
-                    if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
+                    // === AJOUT ICI ===
+                    // Si on est sur l'écran de saisie d'un match spécifique, on l'affiche avec les données chargées
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('view') === 'score-entry' && params.get('matchId')) {
+                        if (typeof renderSingleMatchView === 'function') {
+                            renderSingleMatchView(params.get('matchId'));
+                        }
+                    } else if (!document.activeElement || !document.activeElement.id.startsWith('input-score')) {
                         if (typeof updateUI === 'function') updateUI(); 
                     }
                 } catch (error) {
@@ -785,6 +792,16 @@
             const courtBadge = document.getElementById('single-match-court-badge');
             const roundLabel = document.getElementById('single-match-round');
         
+            // Si les données ne sont pas encore chargées depuis Firebase
+            if (!matches || matches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fa-solid fa-spinner fa-spin text-2xl text-grass-600 mb-2"></i>
+                        <p class="text-sm text-gray-500">Chargement du match...</p>
+                    </div>`;
+                return;
+            }
+        
             const match = matches.find(m => m.id === matchId);
         
             if (!match) {
@@ -817,11 +834,6 @@
                             oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
                             class="w-20 text-center py-3 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
                     </div>
-        
-                    <!-- Bouton de confirmation -->
-                    <button onclick="navigateToView('matches')" class="w-full bg-grass-600 hover:bg-grass-700 text-white font-bold py-3 rounded-xl transition shadow-md mt-4">
-                        <i class="fa-solid fa-check mr-2"></i> Valider et retourner au tableau
-                    </button>
                 </div>
             `;
         }
