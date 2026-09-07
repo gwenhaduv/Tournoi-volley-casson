@@ -54,7 +54,7 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- ÉCRAN 1 : INTERFACE DE GESTION COMPLETE    -->
+    <!-- ÉCRAN 1 : GESTION & CLASSEMENT             -->
     <!-- ========================================== -->
     <div id="view-admin" class="block">
         <!-- Header Section -->
@@ -69,13 +69,16 @@
                 </div>
                 
                 <div class="flex flex-col items-stretch sm:items-center gap-2">
+                    <button onclick="navigateToView('matches')" class="bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gamepad text-white"></i> Saisie des Scores & Matchs <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
                     <button onclick="openInNewTab('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                         <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
                     </button>
                     <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                         <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
-                    <button onclick="openInNewTab('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition duration-200 flex items-center gap-2">
+                    <button onclick="openInNewTab('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition duration-200 flex items-center gap-2 text-xs">
                         <i class="fa-solid fa-history"></i> Historique des Résultats
                     </button>
                 </div>
@@ -83,14 +86,14 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Column 1 & 2: Setup & Matches -->
+            <!-- Column 1 & 2: Setup -->
             <div class="lg:col-span-2 space-y-8">
                 <!-- Team Setup Panel -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                         <div>
                             <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <i class="fa-solid fa-users text-grass-600"></i> 1. Enregistrement des Équipes
+                                <i class="fa-solid fa-users text-grass-600"></i> Enregistrement des Équipes & Configuration
                             </h2>
                             <p class="text-xs text-gray-500">Ajoutez vos équipes. En cas de blocage, utilisez le bouton Réinitialiser.</p>
                         </div>
@@ -183,41 +186,28 @@
                             />
                         </div>
                     </div>
-                    <div class="flex justify-end">
+                    <div class="flex flex-col sm:flex-row justify-end gap-3">
                         <button id="launch-btn" onclick="startTournament()" disabled class="bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed transition-all w-full sm:w-auto">
                             <i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi
                         </button>
                     </div>
                 </section>
 
-                <!-- Interactive Matches / Courts Panel -->
-                <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <i class="fa-solid fa-circle-play text-grass-600"></i> 2. Matchs en Cours & Saisie des Scores
-                            </h2>
-                            <p class="text-xs text-gray-500">Saisissez les scores. Les équipes au repos arbitrent en priorité.</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span id="current-round-label" class="bg-grass-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">Ronde -</span>
-                            <button onclick="nextRound()" id="next-round-btn" disabled class="bg-gray-100 text-gray-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-not-allowed">
-                                Ronde Suivante <i class="fa-solid fa-arrow-right ml-1"></i>
-                            </button>
-                        </div>
+                <!-- Shortcut Box to Match Management -->
+                <section class="bg-gradient-to-r from-grass-900 to-emerald-900 text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-volleyball text-grass-400"></i> Gestion des Matchs
+                        </h3>
+                        <p class="text-xs text-emerald-100/80 mt-1">Accédez à l'écran dédié pour afficher les terrains, saisir les scores et passer aux rondes suivantes.</p>
                     </div>
-
-                    <!-- Courts Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="courts-grid">
-                        <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
-                            <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
-                            <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
-                        </div>
-                    </div>
+                    <button onclick="navigateToView('matches')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-md whitespace-nowrap flex items-center gap-2">
+                        Accéder aux Matchs <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </section>
             </div>
 
-            <!-- Column 3: Standings & Timer -->
+            <!-- Column 3: Standings & Admin -->
             <div class="space-y-8">
                 <!-- Live Dynamic Standings -->
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
@@ -260,7 +250,83 @@
                     </div>
                 </section>
 
-                <!-- Chronomètre -->
+                <!-- Section Admin intégrée -->
+                <section id="admin-section" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px;" class="bg-white shadow-sm">
+                  
+                  <!-- Formulaire de connexion (affiché par défaut si non connecté) -->
+                  <div id="admin-login-form">
+                    <h3 class="font-bold text-sm mb-2">Accès Administration</h3>
+                    <input type="email" id="email-admin" placeholder="Ton e-mail admin" class="w-full p-2 border rounded-lg text-xs mb-2">
+                    <button id="btn-envoyer-lien" class="bg-grass-600 text-white font-bold text-xs px-3 py-2 rounded-lg w-full">Connexion Admin</button>
+                  </div>
+                
+                  <!-- Panneau Admin (masqué par défaut) -->
+                  <div id="admin-panel" style="display: none;">
+                    <p style="color: green; font-weight: bold;" class="text-xs mb-2">✔ Connecté en tant qu'administrateur</p>
+                    
+                    <button id="btn-reinitialiser" style="background-color: red; color: white; padding: 8px; border: none; cursor: pointer;" class="rounded-lg text-xs">
+                      Réinitialiser tous les matchs
+                    </button>
+                    
+                    <button id="btn-deconnexion" style="margin-left: 10px; padding: 8px;" class="rounded-lg text-xs bg-gray-200">
+                      Déconnexion
+                    </button>
+                  </div>
+                
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ÉCRAN DE GESTION MATCHS & SCORES           -->
+    <!-- ========================================== -->
+    <div id="view-matches" class="hidden">
+        <header class="bg-gradient-to-r from-grass-900 to-emerald-950 text-white py-6 px-4 shadow-md mb-8">
+            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-center sm:text-left">
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Gestion Terrain</span>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight mt-1 flex items-center justify-center sm:justify-start gap-2">
+                        <i class="fa-solid fa-volleyball text-grass-500"></i> Matchs en Cours & Saisie des Scores
+                    </h1>
+                </div>
+                <button onclick="navigateToView('admin')" class="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all border border-white/20 flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-left"></i> Page principale & Classement
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Interacive Matches Grid -->
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-play text-grass-600"></i> Terrains & Résultats
+                            </h2>
+                            <p class="text-xs text-gray-500">Saisissez les scores. Les équipes au repos arbitrent en priorité.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="current-round-label" class="bg-grass-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">Ronde -</span>
+                            <button onclick="nextRound()" id="next-round-btn" disabled class="bg-gray-100 text-gray-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-not-allowed">
+                                Ronde Suivante <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Courts Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="courts-grid">
+                        <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
+                            <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce" style="animation-duration: 3s;"></i>
+                            <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Timer & Controls -->
+            <div class="space-y-6">
                 <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
                     <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2 uppercase tracking-wider">
                         <i class="fa-solid fa-stopwatch text-grass-600"></i> Chronomètre de Match
@@ -291,32 +357,6 @@
                             </button>
                         </div>
                     </div>
-                </section>
-
-                <!-- Section Admin intégrée -->
-                <section id="admin-section" style="margin-top: 40px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
-                  
-                  <!-- Formulaire de connexion (affiché par défaut si non connecté) -->
-                  <div id="admin-login-form">
-                    <h3>Accès Administration</h3>
-                    <input type="email" id="email-admin" placeholder="Ton e-mail admin" style="padding: 6px;">
-                    <button id="btn-envoyer-lien" style="padding: 6px;">Connexion Admin</button>
-                  </div>
-                
-                  <!-- Panneau Admin (masqué par défaut) -->
-                  <div id="admin-panel" style="display: none;">
-                    <p style="color: green; font-weight: bold;">✔ Connecté en tant qu'administrateur</p>
-                    
-                    <!-- Met ici tes boutons de gestion -->
-                    <button id="btn-reinitialiser" style="background-color: red; color: white; padding: 8px; border: none; cursor: pointer;">
-                      Réinitialiser tous les matchs
-                    </button>
-                    
-                    <button id="btn-deconnexion" style="margin-left: 10px; padding: 8px;">
-                      Déconnexion
-                    </button>
-                  </div>
-                
                 </section>
             </div>
         </main>
@@ -641,6 +681,7 @@
             stopTvCarousel();
         
             document.getElementById('view-admin').className = 'hidden';
+            document.getElementById('view-matches').className = 'hidden';
             document.getElementById('view-public').className = 'hidden';
             document.getElementById('view-tv').className = 'hidden';
             document.getElementById('view-history').className = 'hidden';
@@ -660,6 +701,9 @@
             if (view === 'admin') {
                 document.getElementById('view-admin').className = 'block';
                 updateUI();
+            } else if (view === 'matches') {
+                document.getElementById('view-matches').className = 'block';
+                updateUI();
             } else if (view === 'results') {
                 document.getElementById('view-public').className = 'block';
                 renderPublicUI();
@@ -672,6 +716,24 @@
             }
         }
         
+        window.navigateToView = navigateToView;
+        window.openInNewTab = openInNewTab;
+        window.switchTab = switchTab;
+        window.generateSingleName = generateSingleName;
+        window.globalReset = globalReset;
+        window.addTeam = addTeam;
+        window.removeTeamByIndex = removeTeamByIndex;
+        window.importBulkTeams = importBulkTeams;
+        window.importExcelFile = importExcelFile;
+        window.changeCourtsCount = changeCourtsCount;
+        window.startTournament = startTournament;
+        window.nextRound = nextRound;
+        window.updateMatchScore = updateMatchScore;
+        window.filterStandings = filterStandings;
+        window.startTimer = startTimer;
+        window.pauseTimer = pauseTimer;
+        window.resetTimer = resetTimer;
+
         window.addEventListener('DOMContentLoaded', () => {
             loadTimerState();
             updateTimerDisplays();
@@ -706,7 +768,7 @@
                 teams = []; currentRound = 1; tournamentActive = false; matches = []; courtsCount = 1;
                 timerState = { durationMinutes: 15, remainingSeconds: 15 * 60, isRunning: false, endTime: null };
                 localStorage.removeItem('volley_tournament_state');
-                if (isFirebaseActive && dbRef) { saveState(); } else { refreshActiveView(); }
+                if (isFirebaseActive && dbSharedRef) { saveState(); } else { refreshActiveView(); }
             }
         }
 
@@ -770,22 +832,7 @@
         }
 
         function nextRound() {
-            if (isFirebaseActive && dbRef) {
-                dbRef.once('value').then(snapshot => {
-                    const data = snapshot.val();
-                    if (data && data.matches) {
-                        matches = data.matches;
-                        verifierEtPasserALaRondeSuivante();
-                    } else {
-                        verifierEtPasserALaRondeSuivante();
-                    }
-                }).catch(err => {
-                    console.error("Erreur de lecture Firebase:", err);
-                    verifierEtPasserALaRondeSuivante();
-                });
-            } else {
-                verifierEtPasserALaRondeSuivante();
-            }
+            verifierEtPasserALaRondeSuivante();
         }
         
         function verifierEtPasserALaRondeSuivante() {
@@ -1014,7 +1061,8 @@
                 launchBtn.disabled = true;
                 launchBtn.className = "bg-emerald-100 text-emerald-700 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed w-full sm:w-auto";
                 launchBtn.innerHTML = `<i class="fa-solid fa-lock mr-2"></i> Tournoi en cours`;
-                document.getElementById('current-round-label').innerText = `Ronde ${currentRound}`;
+                const roundLabel = document.getElementById('current-round-label');
+                if (roundLabel) roundLabel.innerText = `Ronde ${currentRound}`;
                 renderCourts();
             } else {
                 launchBtn.disabled = teams.length < 2;
@@ -1022,12 +1070,16 @@
                     ? "bg-grass-600 hover:bg-grass-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl cursor-pointer w-full sm:w-auto shadow-md"
                     : "bg-gray-200 text-gray-400 font-bold text-sm px-6 py-2.5 rounded-xl cursor-not-allowed w-full sm:w-auto";
                 launchBtn.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> Lancer le Tournoi`;
-                document.getElementById('current-round-label').innerText = `Ronde -`;
-                document.getElementById('courts-grid').innerHTML = `
-                    <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
-                        <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce"></i>
-                        <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
-                    </div>`;
+                const roundLabel = document.getElementById('current-round-label');
+                if (roundLabel) roundLabel.innerText = `Ronde -`;
+                const courtsGrid = document.getElementById('courts-grid');
+                if (courtsGrid) {
+                    courtsGrid.innerHTML = `
+                        <div class="col-span-full text-center py-12 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
+                            <i class="fa-solid fa-volleyball text-3xl mb-2 text-gray-300 animate-bounce"></i>
+                            <p class="text-sm">Enregistrez vos équipes et lancez le tournoi pour voir apparaître les terrains.</p>
+                        </div>`;
+                }
             }
             renderStandingsTable('standings-body');
         }
@@ -1362,12 +1414,11 @@
             container.style.opacity = '1';
         }
 
-        // --- NOUVELLE GESTION UNIFIÉE DU CHRONOMÈTRE LOCAL + FIREBASE ---
+        // --- GESTION DU CHRONOMÈTRE LOCAL + FIREBASE ---
         
         function startLocalTimerLoop() {
             if (localTimerInterval) clearInterval(localTimerInterval);
 
-            // Mise à jour immédiate à l'entrée
             calculateAndUpdateTime();
 
             localTimerInterval = setInterval(() => {
@@ -1449,7 +1500,8 @@
                     const parsed = JSON.parse(saved);
                     if (parsed.timerState) {
                         timerState = parsed.timerState;
-                        document.getElementById('timerInput').value = timerState.durationMinutes || 15;
+                        const input = document.getElementById('timerInput');
+                        if (input) input.value = timerState.durationMinutes || 15;
                         if (timerState.isRunning && timerState.endTime) {
                             startLocalTimerLoop();
                         }
