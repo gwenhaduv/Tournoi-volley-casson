@@ -662,6 +662,7 @@
                     if (typeof renderPublicUI === 'function') renderPublicUI();
                     if (typeof renderStandingsTable === 'function') renderStandingsTable('standings-body');
                     if (typeof buildTvSlides === 'function') buildTvSlides();
+                    if (typeof renderTvSlide === 'function') renderTvSlide();
                     if (typeof renderHistoryPage === 'function') renderHistoryPage();
 
                     const params = new URLSearchParams(window.location.search);
@@ -1455,53 +1456,45 @@
 
         function buildTvSlides() {
             tvSlides = [];
-
-            // LOG DE DÉBOGAGE
-            console.log("DEBUG TV:", {
-                currentRound,
-                courtsCount,
-                matchesCount: matches ? matches.length : 0,
-                currentRoundMatches: matches ? matches.filter(m => m.round === currentRound) : []
-            });
-            
-            // 1. On filtre les matchs de la ronde actuelle
-            const currentRoundMatches = (matches || []).filter(m => m.round === currentRound);
         
-            // 2. Si aucun match n'est trouvé pour cette ronde, slide d'attente
+            // Sécurisation de la ronde active (fallback sur la ronde max si non définie)
+            const activeRound = currentRound || 1;
+            const currentRoundMatches = (matches || []).filter(m => Number(m.round) === Number(activeRound));
+        
             if (currentRoundMatches.length === 0) {
                 tvSlides.push({ type: 'empty', title: 'En attente du lancement...' });
-                return;
+            } else {
+                const allTournamentTeams = teams || [];
+                const activeTeamsInRound = new Set();
+                
+                currentRoundMatches.forEach(m => {
+                    if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
+                        activeTeamsInRound.add(m.teamA);
+                        activeTeamsInRound.add(m.teamB);
+                    }
+                });
+        
+                const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
+        
+                currentRoundMatches.forEach(m => {
+                    if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
+                        let refereeName = availableReferees.length === 0 
+                            ? `Auto (${m.teamA})` 
+                            : availableReferees[(m.court - 1) % availableReferees.length];
+                            
+                        tvSlides.push({ type: 'match', data: m, referee: refereeName });
+                    }
+                });
+        
+                const exempts = currentRoundMatches.filter(m => m.isBye);
+                if (exempts.length > 0) {
+                    tvSlides.push({ type: 'exempt', data: exempts });
+                }
             }
         
-            // 3. Calcul des équipes actives (sur le terrain)
-            const allTournamentTeams = teams || [];
-            const activeTeamsInRound = new Set();
-            
-            currentRoundMatches.forEach(m => {
-                if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
-                    activeTeamsInRound.add(m.teamA);
-                    activeTeamsInRound.add(m.teamB);
-                }
-            });
-        
-            // 4. Détermination des arbitres disponibles
-            const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
-        
-            // 5. Génération des slides de matchs
-            currentRoundMatches.forEach(m => {
-                if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
-                    let refereeName = availableReferees.length === 0 
-                        ? `Auto (${m.teamA})` 
-                        : availableReferees[(m.court - 1) % availableReferees.length];
-                        
-                    tvSlides.push({ type: 'match', data: m, referee: refereeName });
-                }
-            });
-        
-            // 6. Slide pour les équipes exemptes (si existantes)
-            const exempts = currentRoundMatches.filter(m => m.isBye);
-            if (exempts.length > 0) {
-                tvSlides.push({ type: 'exempt', data: exempts });
+            // Réinitialise l'index si la liste a changé
+            if (typeof currentTvIndex === 'undefined' || currentTvIndex >= tvSlides.length) {
+                currentTvIndex = 0;
             }
         }
 
