@@ -1407,48 +1407,36 @@
         }
         
         // --- LOGIQUE CARROUSEL TV ---
-        let tvCarouselInterval = null;
-        let currentTvSlideIndex = 0;
-        let tvSlides = [];
-        
         function startTvCarousel() {
-            stopTvCarousel(); // Annule tout intervalle existant
+            stopTvCarousel();
         
-            // 1. Reconstruire les données du carrousel
             buildTvSlides();
-        
-            // 2. Afficher la première slide tout de suite
-            currentTvSlideIndex = 0;
             renderTvSlide();
         
-            // 3. Démarrer la rotation toutes les 8 secondes si plus d'une slide
-            if (tvSlides.length > 1) {
-                tvCarouselInterval = setInterval(() => {
-                    currentTvSlideIndex = (currentTvSlideIndex + 1) % tvSlides.length;
+            tvInterval = setInterval(() => {
+                if (tvSlides.length > 1) {
+                    currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
                     renderTvSlide();
-                }, 8000);
-            }
+                }
+            }, 5000);
         }
-        
+
         function stopTvCarousel() {
-            if (tvCarouselInterval) {
-                clearInterval(tvCarouselInterval);
-                tvCarouselInterval = null;
+            if (tvInterval) {
+                clearInterval(tvInterval);
+                tvInterval = null;
             }
         }
-        
+
         function buildTvSlides() {
             tvSlides = [];
-        
-            // 1. Tournoi non démarré ou pas de matchs
             if (!tournamentActive || !matches || matches.length === 0) {
-                tvSlides.push({ type: 'empty', title: 'Attente du lancement du tournoi' });
+                tvSlides.push({ type: 'empty', title: 'Attente du tournoi' });
                 return;
             }
         
-            // 2. Filtrer les matchs de la ronde courante
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
-            const allTournamentTeams = teams || [];
+            const allTournamentTeams = teams;
         
             const activeTeamsInRound = new Set();
             currentRoundMatches.forEach(m => {
@@ -1460,7 +1448,6 @@
         
             const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
-            // 3. Ajout des diapositives de matchs
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
                     let refereeName = availableReferees.length === 0 ? `Auto (${m.teamA})` : availableReferees[(m.court - 1) % availableReferees.length];
@@ -1468,23 +1455,17 @@
                 }
             });
         
-            // 4. Ajout de la diapositive des équipes exemptes
             const exempts = currentRoundMatches.filter(m => m.isBye);
             if (exempts.length > 0) {
                 tvSlides.push({ type: 'exempt', data: exempts });
             }
-        
-            // Fallback si aucun match valide n'est ressorti
-            if (tvSlides.length === 0) {
-                tvSlides.push({ type: 'empty', title: 'Aucun match programmé pour cette ronde' });
-            }
         }
-        
+
         function renderTvSlide() {
             const container = document.getElementById('tv-carousel-container');
             const bulletsContainer = document.getElementById('tv-bullets');
             if (!container) return;
-        
+            
             const roundLabel = document.getElementById('tv-round-label');
             if (roundLabel) roundLabel.innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
         
@@ -1492,16 +1473,15 @@
                 tvSlides = [{ type: 'empty', title: 'Attente du tournoi' }];
             }
         
-            // Protection sur l'index
-            if (currentTvSlideIndex >= tvSlides.length) currentTvSlideIndex = 0;
-        
-            const slide = tvSlides[currentTvSlideIndex];
+            if (currentTvIndex >= tvSlides.length) currentTvIndex = 0;
+            
+            const slide = tvSlides[currentTvIndex];
         
             if (slide.type === 'empty') {
                 container.innerHTML = `
                     <div class="text-center py-12">
                         <i class="fa-solid fa-volleyball text-6xl text-amber-500 animate-bounce mb-6"></i>
-                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">${slide.title}</h2>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">En attente du lancement...</h2>
                     </div>`;
             } 
             else if (slide.type === 'match') {
@@ -1553,12 +1533,13 @@
                     </div>`;
             }
         
-            // Puces de pagination
             if (bulletsContainer) {
                 bulletsContainer.innerHTML = tvSlides.map((_, i) => `
-                    <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvSlideIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
+                    <span class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentTvIndex ? 'bg-amber-400 w-6' : 'bg-gray-700'}"></span>
                 `).join('');
             }
+        
+            container.style.opacity = '1';
         }
 
         // --- GESTION DU CHRONOMÈTRE LOCAL + FIREBASE ---
