@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS pour lire les fichiers Excel (.xlsx) directement en JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- QR code-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- Firebase App et Database SDK v9 (compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1223,6 +1225,7 @@
             });
         
             let availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
+            const activeMatchesToDrawQR = [];
         
             for (let i = 1; i <= courtsCount; i++) {
                 const match = currentRoundMatches.find(m => m.court === i);
@@ -1237,6 +1240,7 @@
                 `;
         
                 if (match) {
+                    activeMatchesToDrawQR.push(match);
                     let refereeName = availableReferees.length === 0 ? `Auto (${match.teamA})` : availableReferees[(i - 1) % availableReferees.length];
                     const valA = (typeof match.scoreA === 'number') ? match.scoreA : '';
                     const valB = (typeof match.scoreB === 'number') ? match.scoreB : '';
@@ -1258,12 +1262,17 @@
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                         </div>
         
-                        <a href="?view=score-entry&matchId=${match.id}" 
-                           target="_blank" 
-                           rel="noopener noreferrer" 
-                           class="mt-3 w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-2 border border-emerald-200 text-center">
-                            <i class="fa-solid fa-pen-to-square"></i> Ouvrir la fiche de score
-                        </a>
+                        <div class="mt-3 flex items-center gap-2">
+                            <a href="?view=score-entry&matchId=${match.id}" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-2 border border-emerald-200 text-center">
+                                <i class="fa-solid fa-pen-to-square"></i> Ouvrir la fiche
+                            </a>
+                            
+                            <!-- Conteneur QR Code -->
+                            <div id="qrcode-match-${match.id}" class="bg-white p-1 rounded-lg border border-gray-200 flex-shrink-0" title="Scanner pour ouvrir la fiche"></div>
+                        </div>
                     `;
                 } else {
                     courtHtml += `<div class="py-6 text-center text-xs text-gray-400 italic">Aucun match actif</div>`;
@@ -1271,6 +1280,22 @@
                 courtHtml += `</div>`;
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
+        
+            // Génération automatique des QR Codes une fois le DOM injecté
+            activeMatchesToDrawQR.forEach(match => {
+                const container = document.getElementById(`qrcode-match-${match.id}`);
+                if (container) {
+                    const matchUrl = `${window.location.origin}${window.location.pathname}?view=score-entry&matchId=${match.id}`;
+                    new QRCode(container, {
+                        text: matchUrl,
+                        width: 32,
+                        height: 32,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+                }
+            });
         }
 
         function renderStandingsTable(targetId) {
