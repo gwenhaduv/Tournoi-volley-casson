@@ -1733,6 +1733,95 @@
                 } catch(e) { console.error(e); }
             }
         }
+
+        const ADMIN_PASSWORD = "ascVB2027"; 
+        const AUTH_DURATION_MS = 24 * 60 * 60 * 1000; // 24 heures en millisecondes
+        
+        // Vérifie si l'accès admin est actif et non expiré
+        function isAdminUnlocked() {
+            const authTime = localStorage.getItem('admin_auth_timestamp');
+            if (!authTime) return false;
+        
+            const now = Date.now();
+            const elapsed = now - parseInt(authTime, 10);
+        
+            // Si les 24h sont dépassées, on nettoie le stockage
+            if (elapsed > AUTH_DURATION_MS) {
+                localStorage.removeItem('admin_auth_timestamp');
+                return false;
+            }
+        
+            return true;
+        }
+        
+        // Affiche ou masque la modale
+        function checkAdminAccess() {
+            const modal = document.getElementById('admin-auth-modal');
+            if (!modal) return;
+        
+            if (isAdminUnlocked()) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            } else {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    const input = document.getElementById('admin-password-input');
+                    if (input) input.focus();
+                }, 100);
+            }
+        }
+        
+        // Soumission du mot de passe
+        window.handleAdminAuth = function(event) {
+            event.preventDefault();
+            const input = document.getElementById('admin-password-input');
+            const errorMsg = document.getElementById('auth-error-msg');
+            
+            if (input.value === ADMIN_PASSWORD) {
+                // Enregistre l'heure de connexion actuelle
+                localStorage.setItem('admin_auth_timestamp', Date.now().toString());
+                errorMsg.classList.add('hidden');
+                input.value = '';
+                checkAdminAccess();
+            } else {
+                errorMsg.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+            }
+        };
+        
+        // Vérification au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const view = urlParams.get('view') || 'admin';
+            
+            if (view === 'admin') {
+                checkAdminAccess();
+            }
+        });
     </script>
+    
+    <!-- Modale Mot de Passe Admin -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center max-w-xs w-full text-center">
+            <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xl mb-3">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="font-bold text-gray-800 text-lg mb-1">Espace Admin</h3>
+            <p class="text-xs text-gray-500 mb-4">Entrez le mot de passe pour déverrouiller la gestion du tournoi.</p>
+            
+            <form onsubmit="handleAdminAuth(event)" class="w-full flex flex-col gap-3">
+                <input type="password" id="admin-password-input" placeholder="Mot de passe" 
+                       class="w-full p-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50">
+                
+                <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium">Mot de passe incorrect</p>
+    
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition shadow">
+                    Déverrouiller
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
