@@ -1270,8 +1270,8 @@
                                 <i class="fa-solid fa-pen-to-square"></i> Ouvrir la fiche
                             </a>
                             
-                            <!-- Conteneur QR Code -->
-                            <div id="qrcode-match-${match.id}" class="bg-white p-1 rounded-lg border border-gray-200 flex-shrink-0" title="Scanner pour ouvrir la fiche"></div>
+                            <!-- Conteneur QR Code avec dimension nette -->
+                            <div id="qrcode-match-${match.id}" class="bg-white p-1 rounded-lg border border-gray-200 flex-shrink-0 flex items-center justify-center min-w-[42px] min-h-[42px]"></div>
                         </div>
                     `;
                 } else {
@@ -1281,19 +1281,32 @@
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
         
-            // Génération automatique des QR Codes une fois le DOM injecté
+            // Génération optimisée des QR Codes
             activeMatchesToDrawQR.forEach(match => {
                 const container = document.getElementById(`qrcode-match-${match.id}`);
                 if (container) {
-                    const matchUrl = `${window.location.origin}${window.location.pathname}?view=score-entry&matchId=${match.id}`;
+                    container.innerHTML = ''; // Sécurité anti-doublon
+                    
+                    // Construction propre de l'URL absolue
+                    const matchUrl = new URL(window.location.href);
+                    matchUrl.searchParams.set('view', 'score-entry');
+                    matchUrl.searchParams.set('matchId', match.id);
+        
                     new QRCode(container, {
-                        text: matchUrl,
-                        width: 32,
-                        height: 32,
+                        text: matchUrl.toString(),
+                        width: 80,
+                        height: 80,
                         colorDark: "#000000",
                         colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.L
+                        correctLevel: QRCode.CorrectLevel.M
                     });
+        
+                    // Ajustement dynamique du canvas/img généré pour qu'il soit bien net
+                    const img = container.querySelector('img') || container.querySelector('canvas');
+                    if (img) {
+                        img.style.width = '40px';
+                        img.style.height = '40px';
+                    }
                 }
             });
         }
