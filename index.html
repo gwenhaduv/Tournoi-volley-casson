@@ -1457,8 +1457,16 @@
         function buildTvSlides() {
             tvSlides = [];
         
-            // Sécurisation de la ronde active (fallback sur la ronde max si non définie)
+            // Force la récupération de la ronde active
             const activeRound = currentRound || 1;
+        
+            // Met à jour le label de la ronde immédiatement
+            const roundLabel = document.getElementById('tv-round-label');
+            if (roundLabel) {
+                roundLabel.innerText = `Ronde ${activeRound}`;
+            }
+        
+            // Filtrage des matchs de la ronde en cours
             const currentRoundMatches = (matches || []).filter(m => Number(m.round) === Number(activeRound));
         
             if (currentRoundMatches.length === 0) {
@@ -1492,10 +1500,13 @@
                 }
             }
         
-            // Réinitialise l'index si la liste a changé
+            // Réinitialise l'index si on était bloqué sur la slide "empty"
             if (typeof currentTvIndex === 'undefined' || currentTvIndex >= tvSlides.length) {
                 currentTvIndex = 0;
             }
+        
+            // Affiche la première vraie slide dès que les données Firebase arrivent
+            renderTvSlide();
         }
 
         function renderTvSlide() {
@@ -1504,7 +1515,7 @@
             if (!container) return;
             
             const roundLabel = document.getElementById('tv-round-label');
-            if (roundLabel) roundLabel.innerText = `Ronde ${tournamentActive ? currentRound : '-'}`;
+            if (roundLabel) roundLabel.innerText = `Ronde ${currentRound || 1}`;
         
             if (!tvSlides || tvSlides.length === 0) {
                 tvSlides = [{ type: 'empty', title: 'Attente du tournoi' }];
