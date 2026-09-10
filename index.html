@@ -1407,34 +1407,69 @@
         }
         
         // --- LOGIQUE CARROUSEL TV ---
+        let tvCarouselInterval = null;
+        let currentTvSlideIndex = 0;
+        
         function startTvCarousel() {
-            stopTvCarousel();
+            stopTvCarousel(); // Annule tout intervalle existant par sécurité
         
+            // 1. Reconstruire les diapositives avec les données à jour
             buildTvSlides();
-            renderTvSlide();
         
-            tvInterval = setInterval(() => {
-                if (tvSlides.length > 1) {
-                    currentTvIndex = (currentTvIndex + 1) % tvSlides.length;
-                    renderTvSlide();
-                }
-            }, 5000);
+            const slides = document.querySelectorAll('.tv-slide');
+            if (!slides || slides.length === 0) return;
+        
+            // 2. Réinitialiser à la première diapositive (Ronde 1 / Index 0)
+            currentTvSlideIndex = 0;
+            showTvSlide(currentTvSlideIndex);
+        
+            // 3. Démarrer la rotation toutes les X secondes (ex: 8000ms)
+            tvCarouselInterval = setInterval(() => {
+                const activeSlides = document.querySelectorAll('.tv-slide');
+                if (activeSlides.length === 0) return;
+        
+                currentTvSlideIndex = (currentTvSlideIndex + 1) % activeSlides.length;
+                showTvSlide(currentTvSlideIndex);
+            }, 8000);
         }
-
+        
+        function showTvSlide(index) {
+            const slides = document.querySelectorAll('.tv-slide');
+            slides.forEach((slide, i) => {
+                if (i === index) {
+                    slide.classList.remove('hidden');
+                    slide.classList.add('block');
+                } else {
+                    slide.classList.remove('block');
+                    slide.classList.add('hidden');
+                }
+            });
+        }
+        
         function stopTvCarousel() {
-            if (tvInterval) {
-                clearInterval(tvInterval);
-                tvInterval = null;
+            if (tvCarouselInterval) {
+                clearInterval(tvCarouselInterval);
+                tvCarouselInterval = null;
             }
         }
 
         function buildTvSlides() {
-            tvSlides = [];
+            const container = document.getElementById('tv-slides-container');
+            if (!container) return;
+        
+            // 1. Si le tournoi n'est pas démarré ou si les données ne sont pas prêtes
             if (!tournamentActive || !matches || matches.length === 0) {
-                tvSlides.push({ type: 'empty', title: 'Attente du tournoi' });
+                container.innerHTML = `
+                    <div class="tv-slide block text-center py-20">
+                        <i class="fa-solid fa-clock text-4xl text-white mb-4 animate-pulse"></i>
+                        <p class="text-xl text-gray-300 font-bold">Attente du lancement du tournoi...</p>
+                    </div>`;
                 return;
             }
         
+            tvSlides = [];
+        
+            // 2. Récupération des matchs de la ronde courante
             const currentRoundMatches = matches.filter(m => m.round === currentRound);
             const allTournamentTeams = teams;
         
@@ -1448,6 +1483,7 @@
         
             const availableReferees = allTournamentTeams.filter(t => !activeTeamsInRound.has(t));
         
+            // 3. Construction des diapositives de matchs
             currentRoundMatches.forEach(m => {
                 if (!m.isBye && m.court > 0 && m.court <= courtsCount) {
                     let refereeName = availableReferees.length === 0 ? `Auto (${m.teamA})` : availableReferees[(m.court - 1) % availableReferees.length];
@@ -1455,10 +1491,54 @@
                 }
             });
         
+            // 4. Ajout de la diapositive des équipes exemptes
             const exempts = currentRoundMatches.filter(m => m.isBye);
             if (exempts.length > 0) {
                 tvSlides.push({ type: 'exempt', data: exempts });
             }
+        
+            // 5. Génération du HTML dans le conteneur TV
+            let html = '';
+            tvSlides.forEach((slide, index) => {
+                const isFirst = index === 0 ? 'block' : 'hidden';
+        
+                if (slide.type === 'match') {
+                    const m = slide.data;
+                    const scoreA = (typeof m.scoreA === 'number') ? m.scoreA : '-';
+                    const scoreB = (typeof m.scoreB === 'number') ? m.scoreB : '-';
+        
+                    html += `
+                        <div class="tv-slide ${isFirst} transition-all duration-500">
+                            <div class="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-3xl p-8 max-w-3xl mx-auto text-white shadow-2xl">
+                                <div class="flex justify-between items-center mb-6">
+                                    <span class="bg-emerald-500 text-slate-950 font-black px-4 py-1.5 rounded-full text-sm uppercase tracking-wider">Terrain ${m.court}</span>
+                                    <span class="text-slate-400 font-semibold text-sm">Ronde ${m.round}</span>
+                                </div>
+                                <div class="grid grid-cols-5 items-center gap-4 text-center my-8">
+                                    <div class="col-span-2 text-2xl font-bold truncate">${m.teamA}</div>
+                                    <div class="col-span-1 text-3xl font-black text-emerald-400 font-mono">${scoreA} : ${scoreB}</div>
+                                    <div class="col-span-2 text-2xl font-bold truncate">${m.teamB}</div>
+                                </div>
+                                <div class="border-t border-slate-700/60 pt-4 flex items-center justify-center gap-2 text-slate-400 text-sm">
+                                    <i class="fa-solid fa-whistle"></i>
+                                    <span>Arbitre : <strong class="text-slate-200">${slide.referee}</strong></span>
+                                </div>
+                            </div>
+                        </div>`;
+                } else if (slide.type === 'exempt') {
+                    const exemptNames = slide.data.map(e => e.teamA || e.teamB).join(', ');
+                    html += `
+                        <div class="tv-slide ${isFirst} transition-all duration-500">
+                            <div class="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-3xl p-8 max-w-2xl mx-auto text-white text-center shadow-2xl">
+                                <span class="bg-amber-500/20 text-amber-300 font-bold px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-amber-500/30">Repos</span>
+                                <h3 class="text-2xl font-bold mt-6 mb-2">Équipes exemptes — Ronde ${currentRound}</h3>
+                                <p class="text-slate-300 text-lg font-medium">${exemptNames}</p>
+                            </div>
+                        </div>`;
+                }
+            });
+        
+            container.innerHTML = html;
         }
 
         function renderTvSlide() {
