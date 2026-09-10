@@ -764,6 +764,7 @@
         window.startTimer = startTimer;
         window.pauseTimer = pauseTimer;
         window.resetTimer = resetTimer;
+        window.changeScore = changeScore;
 
         window.addEventListener('DOMContentLoaded', () => {
             loadTimerState();
@@ -787,7 +788,6 @@
             const courtBadge = document.getElementById('single-match-court-badge');
             const roundLabel = document.getElementById('single-match-round');
         
-            // Si les données ne sont pas encore chargées depuis Firebase
             if (!matches || matches.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8">
@@ -807,30 +807,52 @@
             courtBadge.innerText = `Terrain ${match.court}`;
             roundLabel.innerText = `Ronde ${match.round}`;
         
-            const valA = (typeof match.scoreA === 'number') ? match.scoreA : '';
-            const valB = (typeof match.scoreB === 'number') ? match.scoreB : '';
+            const valA = (typeof match.scoreA === 'number') ? match.scoreA : 0;
+            const valB = (typeof match.scoreB === 'number') ? match.scoreB : 0;
         
             container.innerHTML = `
                 <div class="space-y-6">
                     <!-- Équipe A -->
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
-                        <span class="font-bold text-gray-800 text-lg flex-1 pr-2">${match.teamA}</span>
-                        <input type="number" min="0" value="${valA}" placeholder="0" 
-                            oninput="updateMatchScore('${match.id}', 'scoreA', this.value)"
-                            class="w-20 text-center py-3 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-3">
+                        <span class="font-bold text-gray-800 text-base text-center">${match.teamA}</span>
+                        <div class="flex items-center justify-center gap-3">
+                            <button onclick="changeScore('${match.id}', 'scoreA', -1)" class="w-12 h-12 bg-white border border-gray-200 rounded-xl font-extrabold text-xl text-gray-700 shadow-sm active:bg-gray-100 flex items-center justify-center">-</button>
+                            <input type="number" id="single-scoreA" min="0" value="${valA}" 
+                                oninput="updateMatchScore('${match.id}', 'scoreA', this.value)"
+                                class="w-20 text-center py-2 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
+                            <button onclick="changeScore('${match.id}', 'scoreA', 1)" class="w-12 h-12 bg-grass-600 text-white rounded-xl font-extrabold text-xl shadow-sm active:bg-grass-700 flex items-center justify-center">+</button>
+                        </div>
                     </div>
         
                     <div class="text-center font-bold text-gray-300 uppercase tracking-widest text-xs">VS</div>
         
                     <!-- Équipe B -->
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
-                        <span class="font-bold text-gray-800 text-lg flex-1 pr-2">${match.teamB}</span>
-                        <input type="number" min="0" value="${valB}" placeholder="0" 
-                            oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
-                            class="w-20 text-center py-3 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-3">
+                        <span class="font-bold text-gray-800 text-base text-center">${match.teamB}</span>
+                        <div class="flex items-center justify-center gap-3">
+                            <button onclick="changeScore('${match.id}', 'scoreB', -1)" class="w-12 h-12 bg-white border border-gray-200 rounded-xl font-extrabold text-xl text-gray-700 shadow-sm active:bg-gray-100 flex items-center justify-center">-</button>
+                            <input type="number" id="single-scoreB" min="0" value="${valB}" 
+                                oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
+                                class="w-20 text-center py-2 bg-white border border-gray-300 rounded-xl font-mono text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-grass-500 shadow-sm">
+                            <button onclick="changeScore('${match.id}', 'scoreB', 1)" class="w-12 h-12 bg-grass-600 text-white rounded-xl font-extrabold text-xl shadow-sm active:bg-grass-700 flex items-center justify-center">+</button>
+                        </div>
                     </div>
                 </div>
             `;
+        }
+
+        function changeScore(matchId, field, delta) {
+            const input = document.getElementById(`single-${field}`);
+            if (!input) return;
+        
+            let currentValue = parseInt(input.value, 10);
+            if (isNaN(currentValue)) currentValue = 0;
+        
+            const newValue = Math.max(0, currentValue + delta);
+            input.value = newValue;
+        
+            // Déclenche l'enregistrement vers Firebase
+            updateMatchScore(matchId, field, newValue);
         }
         
         function switchTab(type) {
