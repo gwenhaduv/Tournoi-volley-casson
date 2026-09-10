@@ -1247,31 +1247,43 @@
         
                     courtHtml += `
                         <div class="text-[11px] text-gray-500 italic mb-2"><i class="fa-solid fa-whistle text-grass-600 mr-1"></i> Arb : <strong>${refereeName}</strong></div>
-                        <div class="py-2 text-sm font-semibold text-gray-800 flex justify-between items-center">
+                        <div class="py-1 text-sm font-semibold text-gray-800 flex justify-between items-center">
                             <span class="text-right flex-1">${match.teamA}</span>
                             <span class="text-xs text-gray-300 font-normal px-1">VS</span>
                             <span class="text-left flex-1">${match.teamB}</span>
                         </div>
-                        <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-center gap-2">
-                            <input type="number" min="0" id="input-scoreA-${match.id}" value="${valA}" placeholder="0" 
-                                oninput="updateMatchScore('${match.id}', 'scoreA', this.value)"
-                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
-                            <span class="text-gray-400 font-bold">-</span>
-                            <input type="number" min="0" id="input-scoreB-${match.id}" value="${valB}" placeholder="0" 
-                                oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
-                                class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
-                        </div>
         
-                        <div class="mt-3 flex items-center gap-2">
+                        <!-- Disposition en 2 colonnes : Saisie + Bouton à gauche, Grand QR à droite -->
+                        <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between gap-3">
+                            
+                            <!-- Colonne de gauche (Saisie score + Bouton fiche des scores) -->
+                            <div class="flex flex-col gap-3 flex-1">
+                                <div class="flex items-center justify-center gap-2">
+                                    <input type="number" min="0" id="input-scoreA-${match.id}" value="${valA}" placeholder="0" 
+                                        oninput="updateMatchScore('${match.id}', 'scoreA', this.value)"
+                                        class="w-14 text-center p-2 border border-gray-200 rounded-lg text-base font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
+                                    <span class="text-gray-400 font-bold">-</span>
+                                    <input type="number" min="0" id="input-scoreB-${match.id}" value="${valB}" placeholder="0" 
+                                        oninput="updateMatchScore('${match.id}', 'scoreB', this.value)"
+                                        class="w-14 text-center p-2 border border-gray-200 rounded-lg text-base font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
+                                </div>
+        
+                                <a href="?view=score-entry&matchId=${match.id}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-2 border border-emerald-200 text-center">
+                                    <i class="fa-solid fa-pen-to-square"></i> fiche des scores
+                                </a>
+                            </div>
+        
                             <a href="?view=score-entry&matchId=${match.id}" 
                                target="_blank" 
                                rel="noopener noreferrer" 
-                               class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-2 border border-emerald-200 text-center">
-                                <i class="fa-solid fa-pen-to-square"></i> Ouvrir la fiche
+                               title="Scanner pour ouvrir la fiche"
+                               class="bg-white hover:bg-gray-50 p-1.5 rounded-xl border border-gray-200 flex-shrink-0 transition shadow-sm hover:border-emerald-300 flex items-center justify-center">
+                                <div id="qrcode-match-${match.id}"></div>
                             </a>
-                            
-                            <!-- Conteneur QR Code avec dimension nette -->
-                            <div id="qrcode-match-${match.id}" class="bg-white p-1 rounded-lg border border-gray-200 flex-shrink-0 flex items-center justify-center min-w-[42px] min-h-[42px]"></div>
+        
                         </div>
                     `;
                 } else {
@@ -1281,31 +1293,29 @@
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
         
-            // Génération optimisée des QR Codes
+            // Génération des QR Codes en grand format (85x85 px)
             activeMatchesToDrawQR.forEach(match => {
                 const container = document.getElementById(`qrcode-match-${match.id}`);
                 if (container) {
-                    container.innerHTML = ''; // Sécurité anti-doublon
+                    container.innerHTML = '';
                     
-                    // Construction propre de l'URL absolue
                     const matchUrl = new URL(window.location.href);
                     matchUrl.searchParams.set('view', 'score-entry');
                     matchUrl.searchParams.set('matchId', match.id);
         
                     new QRCode(container, {
                         text: matchUrl.toString(),
-                        width: 80,
-                        height: 80,
+                        width: 170,
+                        height: 170,
                         colorDark: "#000000",
                         colorLight: "#ffffff",
                         correctLevel: QRCode.CorrectLevel.M
                     });
         
-                    // Ajustement dynamique du canvas/img généré pour qu'il soit bien net
                     const img = container.querySelector('img') || container.querySelector('canvas');
                     if (img) {
-                        img.style.width = '40px';
-                        img.style.height = '40px';
+                        img.style.width = '85px';
+                        img.style.height = '85px';
                     }
                 }
             });
