@@ -457,14 +457,20 @@
     <!-- ========================================== -->
     <div id="view-history" class="hidden min-h-screen bg-gray-50 p-4 md:p-6 font-sans">
         <div class="max-w-4xl mx-auto">
-            <!-- En-tête avec bouton retour -->
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="navigateToView('admin')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-xl transition duration-150 flex items-center gap-2">
+            <!-- En-tête avec bouton retour et filtre -->
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+                <button onclick="navigateToView('admin')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-xl transition duration-150 flex items-center gap-2 self-start sm:self-auto">
                     <i class="fa-solid fa-arrow-left"></i> Retour à la gestion
                 </button>
                 <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight uppercase">
                     <i class="fa-solid fa-history text-blue-600 mr-2"></i> Historique des Matchs
                 </h1>
+                <div class="flex items-center gap-2">
+                    <label for="history-round-filter" class="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Filtrer par ronde :</label>
+                    <select id="history-round-filter" onchange="renderHistoryPage()" class="bg-white border border-gray-200 text-gray-800 font-bold text-xs rounded-xl px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">Toutes les rondes</option>
+                    </select>
+                </div>
             </div>
     
             <!-- Conteneur principal de l'historique -->
@@ -658,8 +664,6 @@
                     if (typeof buildTvSlides === 'function') buildTvSlides();
                     if (typeof renderHistoryPage === 'function') renderHistoryPage();
 
-                    // === AJOUT ICI ===
-                    // Si on est sur l'écran de saisie d'un match spécifique, on l'affiche avec les données chargées
                     const params = new URLSearchParams(window.location.search);
                     if (params.get('view') === 'score-entry' && params.get('matchId')) {
                         if (typeof renderSingleMatchView === 'function') {
@@ -765,6 +769,7 @@
         window.pauseTimer = pauseTimer;
         window.resetTimer = resetTimer;
         window.changeScore = changeScore;
+        window.renderHistoryPage = renderHistoryPage;
 
         window.addEventListener('DOMContentLoaded', () => {
             loadTimerState();
@@ -851,7 +856,6 @@
             const newValue = Math.max(0, currentValue + delta);
             input.value = newValue;
         
-            // Déclenche l'enregistrement vers Firebase
             updateMatchScore(matchId, field, newValue);
         }
         
@@ -1094,12 +1098,9 @@
             if (matchIndex !== -1) {
                 const numericValue = value === "" ? null : parseInt(value, 10);
                 
-                // 1. Mise à jour en mémoire locale
                 matches[matchIndex][field] = numericValue;
         
-                // 2. Envoi ciblé vers Firebase si actif
                 if (isFirebaseActive) {
-                    // On cible directement la propriété exacte dans Firebase
                     const scoreRef = ref(db, `tournament_shared_state/matches/${matchIndex}/${field}`);
                     set(scoreRef, numericValue).catch(err => {
                         console.error("Erreur lors de l'enregistrement du score :", err);
@@ -1256,7 +1257,6 @@
                                 class="w-16 text-center p-1.5 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-grass-500 bg-gray-50">
                         </div>
         
-                        <!-- BOUTON AJOUTÉ ICI -->
                         <a href="?view=score-entry&matchId=${match.id}" 
                            target="_blank" 
                            rel="noopener noreferrer" 
@@ -1357,12 +1357,16 @@
 
         function renderHistoryPage() {
             const container = document.getElementById('history-page-container');
+            const filterSelect = document.getElementById('history-round-filter');
             if (!container) return;
         
             const playedMatches = matches.filter(m => m.played && !m.isBye);
         
             if (playedMatches.length === 0) {
                 container.innerHTML = `<p class="text-gray-400 italic text-center py-8">Aucun match terminé pour le moment.</p>`;
+                if (filterSelect) {
+                    filterSelect.innerHTML = `<option value="all">Toutes les rondes</option>`;
+                }
                 return;
             }
         
@@ -1373,9 +1377,30 @@
             });
         
             const sortedRounds = Object.keys(matchesByRound).sort((a, b) => b - a);
+            
+            // Mise à jour des options du filtre sans réinitialiser inutilement la sélection en cours
+            if (filterSelect) {
+                const currentSelected = filterSelect.value;
+                let filterOptionsHtml = `<option value="all">Toutes les rondes</option>`;
+                sortedRounds.forEach(round => {
+                    filterOptionsHtml += `<option value="${round}">Ronde ${round}</option>`;
+                });
+                filterSelect.innerHTML = filterOptionsHtml;
+                if (currentSelected && [...filterSelect.options].some(o => o.value === currentSelected)) {
+                    filterSelect.value = currentSelected;
+                }
+            }
+
+            const selectedRound = filterSelect ? filterSelect.value : 'all';
+            const roundsToDisplay = selectedRound === 'all' ? sortedRounds : sortedRounds.filter(r => String(r) === String(selectedRound));
+
+            if (roundsToDisplay.length === 0) {
+                container.innerHTML = `<p class="text-gray-400 italic text-center py-8">Aucun match trouvé pour cette ronde.</p>`;
+                return;
+            }
+
             let html = "";
-        
-            sortedRounds.forEach(round => {
+            roundsToDisplay.forEach(round => {
                 html += `
                     <div class="bg-gray-50 border border-gray-100 rounded-xl p-4">
                         <h3 class="text-sm font-black text-blue-700 uppercase tracking-wider mb-3 pb-1 border-b border-gray-200">
