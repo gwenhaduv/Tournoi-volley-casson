@@ -1455,7 +1455,15 @@
 
         function buildTvSlides() {
             tvSlides = [];
-        
+
+            // LOG DE DÉBOGAGE
+            console.log("DEBUG TV:", {
+                currentRound,
+                courtsCount,
+                matchesCount: matches ? matches.length : 0,
+                currentRoundMatches: matches ? matches.filter(m => m.round === currentRound) : []
+            });
+            
             // 1. On filtre les matchs de la ronde actuelle
             const currentRoundMatches = (matches || []).filter(m => m.round === currentRound);
         
