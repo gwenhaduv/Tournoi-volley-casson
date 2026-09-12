@@ -547,60 +547,6 @@
             document.getElementById('firebase-alert')?.classList.remove('hidden');
         }
 
-        // 3. AUTHENTIFICATION ADMIN
-        const loginForm = document.getElementById('admin-login-form');
-        const adminPanel = document.getElementById('admin-panel');
-
-        // Validation du lien magique au clic dans l'e-mail
-        if (isSignInWithEmailLink(auth, window.location.href)) {
-          let email = window.localStorage.getItem('emailForSignIn');
-          if (!email) email = window.prompt('Confirme ton e-mail admin :');
-          
-          signInWithEmailLink(auth, email, window.location.href)
-            .then(() => {
-              window.localStorage.removeItem('emailForSignIn');
-              window.history.replaceState({}, document.title, window.location.pathname);
-            })
-            .catch((err) => alert("Erreur : " + err.message));
-        }
-
-        // Gestion de l'affichage du panneau admin selon l'état de connexion
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            if (loginForm) loginForm.style.display = 'none';
-            if (adminPanel) adminPanel.style.display = 'block';
-          } else {
-            if (loginForm) loginForm.style.display = 'block';
-            if (adminPanel) adminPanel.style.display = 'none';
-          }
-        });
-
-        // Bouton "Connexion Admin" (Envoi de l'e-mail)
-        document.getElementById('btn-envoyer-lien')?.addEventListener('click', () => {
-          const emailInput = document.getElementById('email-admin');
-          const email = emailInput ? emailInput.value : '';
-          
-          sendSignInLinkToEmail(auth, email, {
-            url: 'https://gwenhaduv.github.io/Tournoi-volley-casson/',
-            handleCodeInApp: true,
-          }).then(() => {
-            window.localStorage.setItem('emailForSignIn', email);
-            alert('Lien de connexion envoyé par e-mail !');
-          }).catch((err) => alert("Erreur : " + err.message));
-        });
-
-        // Déconnexion
-        document.getElementById('btn-deconnexion')?.addEventListener('click', () => signOut(auth));
-
-        // Réinitialisation du tournoi
-        document.getElementById('btn-reinitialiser')?.addEventListener('click', () => {
-          if (confirm("Attention : supprimer tous les matchs du tournoi ?")) {
-            remove(ref(db, 'matchs'))
-              .then(() => alert("Tournoi réinitialisé !"))
-              .catch((err) => alert("Erreur : " + err.message));
-          }
-        });
-
         // 4. ÉTAT ET SYNCHRONISATION DU TOURNOI
         let teams = [];
         let currentRound = 1;
