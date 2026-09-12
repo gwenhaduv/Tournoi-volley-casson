@@ -506,12 +506,10 @@
     <!-- App Logic Script -->
     <script type="module">
         // 1. IMPORTATIONS FIREBASE (v10 ES Modules)
-        import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"; // Adapte la version si besoin
-
-        const auth = getAuth();
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
           getAuth, 
+          signInAnonymously, 
           sendSignInLinkToEmail, 
           isSignInWithEmailLink, 
           signInWithEmailLink, 
