@@ -71,14 +71,19 @@
                 </div>
                 
                 <div class="flex flex-col items-stretch sm:items-center gap-2">
-                    <button onclick="openInNewTab('matches')" class="bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                    <button id="admin-auth-btn" onclick="toggleAdminAuth()" 
+                            class="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-2 px-3 rounded-xl transition shadow-sm">
+                        <i id="admin-auth-icon" class="fa-solid fa-lock"></i>
+                        <span id="admin-auth-label">Connexion Admin</span>
+                    </button>
+                    <button onclick="openInNewTab('matches')" class="w-64 h-11 bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 flex-shrink-0">
                         <i class="fa-solid fa-gamepad text-white"></i> Saisie des Scores & Matchs <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                     </button>
                     <button onclick="openInNewTab('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-tv text-grass-600"></i> Écran Public (Résultats & Tableau) <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
+                        <i class="fa-solid fa-tv text-grass-600"></i> Résultats & Tableau <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
                     </button>
                     <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play text-white"></i> Projeter l'Écran TV <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
+                        <i class="fa-solid fa-play text-white"></i> Direct <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                     </button>
                     <button onclick="openInNewTab('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition duration-200 flex items-center gap-2 text-xs">
                         <i class="fa-solid fa-history"></i> Historique des Résultats <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
@@ -1760,6 +1765,124 @@
                 } catch(e) { console.error(e); }
             }
         }
+
+        // Mot de passe défini directement dans le code
+        const ADMIN_PASSWORD = "ascvb"; 
+        
+        // 1. Vérifie si la session admin est active
+        function isAdminUnlocked() {
+            return sessionStorage.getItem('admin_authenticated') === 'true';
+        }
+        
+        // 2. Met à jour l'interface (bouton navbar + éléments .admin-only)
+        function updateAdminUI() {
+            const isUnlocked = isAdminUnlocked();
+            const btnLabel = document.getElementById('admin-auth-label');
+            const btnIcon = document.getElementById('admin-auth-icon');
+            const btn = document.getElementById('admin-auth-btn');
+        
+            if (btnLabel && btnIcon) {
+                if (isUnlocked) {
+                    btnLabel.innerText = "Déconnexion Admin";
+                    btnIcon.className = "fa-solid fa-unlock text-emerald-300";
+                    if (btn) btn.className = "flex items-center gap-2 bg-emerald-800 text-white font-semibold text-xs py-2 px-3 rounded-xl transition border border-emerald-500 shadow-sm";
+                } else {
+                    btnLabel.innerText = "Connexion Admin";
+                    btnIcon.className = "fa-solid fa-lock";
+                    if (btn) btn.className = "flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-2 px-3 rounded-xl transition shadow-sm";
+                }
+            }
+        
+            // Affiche ou masque tous les éléments réservés aux admins
+            document.querySelectorAll('.admin-only').forEach(el => {
+                if (isUnlocked) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+        }
+        
+        // 3. Clic sur le bouton de la navbar
+        window.toggleAdminAuth = function() {
+            if (isAdminUnlocked()) {
+                // Déconnexion manuelle
+                sessionStorage.removeItem('admin_authenticated');
+                updateAdminUI();
+            } else {
+                // Ouverture de la modale
+                openAdminModal();
+            }
+        };
+        
+        window.openAdminModal = function() {
+            const modal = document.getElementById('admin-auth-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                const input = document.getElementById('admin-password-input');
+                if (input) input.focus();
+            }, 100);
+        };
+        
+        window.closeAdminModal = function() {
+            const modal = document.getElementById('admin-auth-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        };
+        
+        // 4. Verification lors du submit
+        window.handleAdminAuth = function(event) {
+            event.preventDefault();
+            const input = document.getElementById('admin-password-input');
+            const errorMsg = document.getElementById('auth-error-msg');
+            
+            if (input.value === ADMIN_PASSWORD) {
+                sessionStorage.setItem('admin_authenticated', 'true');
+                errorMsg.classList.add('hidden');
+                input.value = '';
+                closeAdminModal();
+                updateAdminUI();
+            } else {
+                errorMsg.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+            }
+        };
+        
+        // Vérification initiale au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAdminUI();
+        });
     </script>
+    <!-- Modale Mot de Passe Admin -->
+        <div id="admin-auth-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4" onclick="closeAdminModal()">
+            <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center max-w-xs w-full text-center relative" onclick="event.stopPropagation()">
+                
+                <button onclick="closeAdminModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+        
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xl mb-3">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="font-bold text-gray-800 text-lg mb-1">Accès Admin</h3>
+                <p class="text-xs text-gray-500 mb-4">Saisissez le mot de passe pour gérer le tournoi.</p>
+                
+                <form onsubmit="handleAdminAuth(event)" class="w-full flex flex-col gap-3">
+                    <input type="password" id="admin-password-input" placeholder="Mot de passe" 
+                           class="w-full p-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50">
+                    
+                    <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium">Mot de passe incorrect</p>
+        
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition shadow">
+                        Se connecter
+                    </button>
+                </form>
+            </div>
+        </div>
 </body>
 </html>
