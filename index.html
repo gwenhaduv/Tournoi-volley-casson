@@ -1280,8 +1280,8 @@
                                target="_blank" 
                                rel="noopener noreferrer" 
                                title="Scanner pour ouvrir la fiche"
-                               class="bg-white hover:bg-gray-50 p-1.5 rounded-xl border border-gray-200 flex-shrink-0 transition shadow-sm hover:border-emerald-300 flex items-center justify-center">
-                                <div id="qrcode-match-${match.id}"></div>
+                               class="w-[120px] h-[120px] bg-white hover:bg-gray-50 p-2 rounded-2xl border border-gray-200 flex-shrink-0 transition shadow-sm hover:border-emerald-300 flex items-center justify-center overflow-hidden">
+                                <div id="qrcode-match-${match.id}" class="w-full h-full flex items-center justify-center"></div>
                             </a>
         
                         </div>
@@ -1337,6 +1337,12 @@
                     });
             
                     qrCode.append(container);
+
+                    // Ajustement CSS pour forcer le canvas/svg à occuper 100% de l'espace disponible
+                    const generatedEl = container.querySelector('canvas') || container.querySelector('svg');
+                    if (generatedEl) {
+                        generatedEl.style.width = '100%';
+                        generatedEl.style.height = '100%';
                 }
             });
         }
