@@ -506,6 +506,9 @@
     <!-- App Logic Script -->
     <script type="module">
         // 1. IMPORTATIONS FIREBASE (v10 ES Modules)
+        import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"; // Adapte la version si besoin
+
+        const auth = getAuth();
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
           getAuth, 
@@ -1764,9 +1767,13 @@
         // 3. Clic sur le bouton de la navbar
         window.toggleAdminAuth = function() {
             if (isAdminUnlocked()) {
-                // Déconnexion manuelle
-                sessionStorage.removeItem('admin_authenticated');
-                updateAdminUI();
+                // Déconnexion manuelle Firebase + nettoyage de la session
+                signOut(auth).then(() => {
+                    sessionStorage.removeItem('admin_authenticated');
+                    updateAdminUI();
+                }).catch((err) => {
+                    console.error("Erreur déconnexion Firebase :", err);
+                });
             } else {
                 // Ouverture de la modale
                 openAdminModal();
@@ -1792,28 +1799,43 @@
             }
         };
         
-        // 4. Verification lors du submit
+        // 4. Vérification lors du submit + Connexion Firebase Anonyme
         window.handleAdminAuth = function(event) {
             event.preventDefault();
             const input = document.getElementById('admin-password-input');
             const errorMsg = document.getElementById('auth-error-msg');
             
             if (input.value === ADMIN_PASSWORD) {
-                sessionStorage.setItem('admin_authenticated', 'true');
-                errorMsg.classList.add('hidden');
-                input.value = '';
-                closeAdminModal();
-                updateAdminUI();
+                // Authentification anonyme auprès de Firebase pour valider les règles du serveur (.write)
+                signInAnonymously(auth)
+                    .then(() => {
+                        sessionStorage.setItem('admin_authenticated', 'true');
+                        if (errorMsg) errorMsg.classList.add('hidden');
+                        input.value = '';
+                        closeAdminModal();
+                        updateAdminUI();
+                    })
+                    .catch((error) => {
+                        console.error("Erreur connexion anonyme Firebase :", error);
+                        alert("Erreur lors de la connexion au serveur Firebase.");
+                    });
             } else {
-                errorMsg.classList.remove('hidden');
+                if (errorMsg) errorMsg.classList.remove('hidden');
                 input.value = '';
                 input.focus();
             }
         };
         
-        // Vérification initiale au chargement
+        // Synchro automatique de la session lors du chargement ou rafraîchissement
         window.addEventListener('DOMContentLoaded', () => {
-            updateAdminUI();
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    sessionStorage.setItem('admin_authenticated', 'true');
+                } else {
+                    sessionStorage.removeItem('admin_authenticated');
+                }
+                updateAdminUI();
+            });
         });
     </script>
     <!-- Modale Mot de Passe Admin -->
