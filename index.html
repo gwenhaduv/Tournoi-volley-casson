@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS pour lire les fichiers Excel (.xlsx) directement en JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- QR code-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Bibliothèque pour QR Codes stylisés -->
+    <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     
     <!-- Firebase App et Database SDK v9 (compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1293,30 +1293,50 @@
                 courtsGrid.insertAdjacentHTML('beforeend', courtHtml);
             }
         
-            // Génération des QR Codes en grand format (85x85 px)
+            // Génération des QR Codes stylisés avec dégradé et coins arrondis
             activeMatchesToDrawQR.forEach(match => {
                 const container = document.getElementById(`qrcode-match-${match.id}`);
                 if (container) {
                     container.innerHTML = '';
-                    
+            
                     const matchUrl = new URL(window.location.href);
                     matchUrl.searchParams.set('view', 'score-entry');
                     matchUrl.searchParams.set('matchId', match.id);
-        
-                    new QRCode(container, {
-                        text: matchUrl.toString(),
-                        width: 170,
-                        height: 170,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.M
+            
+                    const qrCode = new QRCodeStyling({
+                        width: 85,
+                        height: 85,
+                        type: "canvas",
+                        data: matchUrl.toString(),
+                        margin: 2,
+                        qrOptions: {
+                            errorCorrectionLevel: 'M'
+                        },
+                        dotsOptions: {
+                            type: "rounded", // Options: 'rounded', 'dots', 'classy-rounded', 'extra-rounded'
+                            gradient: {
+                                type: "linear",
+                                rotation: 0.78, // Dégradé en diagonale
+                                colorStops: [
+                                    { offset: 0, color: "#065f46" }, // Vert foncé (emerald-800)
+                                    { offset: 1, color: "#10b981" }  // Vert émeraude brillant (emerald-500)
+                                ]
+                            }
+                        },
+                        cornersSquareOptions: {
+                            type: "extra-rounded", // Coins extérieurs très arrondis
+                            color: "#065f46"
+                        },
+                        cornersDotOptions: {
+                            type: "dot", // Point central des coins en cercle
+                            color: "#10b981"
+                        },
+                        backgroundOptions: {
+                            color: "#ffffff"
+                        }
                     });
-        
-                    const img = container.querySelector('img') || container.querySelector('canvas');
-                    if (img) {
-                        img.style.width = '85px';
-                        img.style.height = '85px';
-                    }
+            
+                    qrCode.append(container);
                 }
             });
         }
