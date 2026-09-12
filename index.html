@@ -75,25 +75,25 @@
         
                     <!-- Boutons de navigation en ligne -->
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-                        <button onclick="openInNewTab('matches')" class="h-10 bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-1 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <button onclick="openInNewTab('matches')" class="h-10 bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                             <i class="fa-solid fa-gamepad text-white"></i> 
                             <span>Saisie des Scores & Matchs</span> 
                             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                         </button> 
         
-                        <button onclick="openInNewTab('results')" class="h-10 bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-1 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <button onclick="openInNewTab('results')" class="h-10 bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                             <i class="fa-solid fa-tv text-grass-600"></i> 
                             <span>Résultats & Tableau</span> 
                             <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
                         </button>
         
-                        <button onclick="openInNewTab('tv')" class="h-10 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-1 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <button onclick="openInNewTab('tv')" class="h-10 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                             <i class="fa-solid fa-play text-white"></i> 
                             <span>Direct</span> 
                             <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
                         </button>
         
-                        <button onclick="openInNewTab('history')" class="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-1 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                        <button onclick="openInNewTab('history')" class="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
                             <i class="fa-solid fa-history"></i> 
                             <span>Historique des Résultats</span> 
                             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
@@ -127,7 +127,7 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
                             <span id="team-count-badge" class="bg-gray-100 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap">0 Équipe(s)</span>
-                            <button onclick="globalReset()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md">
+                            <button onclick="globalReset()" class="admin-only hidden bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md">
                                 <i class="fa-solid fa-trash-can"></i> Réinitialiser le Tournoi
                             </button>
                         </div>
@@ -276,31 +276,6 @@
                             </tbody>
                         </table>
                     </div>
-                </section>
-
-                <!-- Section Admin intégrée -->
-                <section id="admin-section" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px;" class="bg-white shadow-sm">
-                  
-                  <!-- Formulaire de connexion (affiché par défaut si non connecté) -->
-                  <div id="admin-login-form">
-                    <h3 class="font-bold text-sm mb-2">Accès Administration</h3>
-                    <input type="email" id="email-admin" placeholder="Ton e-mail admin" class="w-full p-2 border rounded-lg text-xs mb-2">
-                    <button id="btn-envoyer-lien" class="bg-grass-600 text-white font-bold text-xs px-3 py-2 rounded-lg w-full">Connexion Admin</button>
-                  </div>
-                
-                  <!-- Panneau Admin (masqué par défaut) -->
-                  <div id="admin-panel" style="display: none;">
-                    <p style="color: green; font-weight: bold;" class="text-xs mb-2">✔ Connecté en tant qu'administrateur</p>
-                    
-                    <button id="btn-reinitialiser" style="background-color: red; color: white; padding: 8px; border: none; cursor: pointer;" class="rounded-lg text-xs">
-                      Réinitialiser tous les matchs
-                    </button>
-                    
-                    <button id="btn-deconnexion" style="margin-left: 10px; padding: 8px;" class="rounded-lg text-xs bg-gray-200">
-                      Déconnexion
-                    </button>
-                  </div>
-                
                 </section>
             </div>
         </main>
@@ -904,11 +879,27 @@
         }
 
         function globalReset() {
+            // Sécurité supplémentaire : vérification du statut admin
+            if (typeof isAdminUnlocked === 'function' && !isAdminUnlocked()) {
+                alert("Accès refusé : vous devez être connecté en tant qu'administrateur.");
+                return;
+            }
+        
             if (confirm("🚨 Voulez-vous TOUT réinitialiser ?")) {
-                teams = []; currentRound = 1; tournamentActive = false; matches = []; courtsCount = 1;
+                teams = []; 
+                currentRound = 1; 
+                tournamentActive = false; 
+                matches = []; 
+                courtsCount = 1;
                 timerState = { durationMinutes: 15, remainingSeconds: 15 * 60, isRunning: false, endTime: null };
+                
                 localStorage.removeItem('volley_tournament_state');
-                if (isFirebaseActive && dbSharedRef) { saveState(); } else { refreshActiveView(); }
+                
+                if (isFirebaseActive && dbSharedRef) { 
+                    saveState(); 
+                } else { 
+                    refreshActiveView(); 
+                }
             }
         }
 
