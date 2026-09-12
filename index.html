@@ -60,35 +60,56 @@
     <!-- ========================================== -->
     <div id="view-admin" class="block">
         <!-- Header Section -->
-        <header class="relative bg-gradient-to-br from-grass-900 via-grass-800 to-emerald-950 text-white py-10 px-4 shadow-lg mb-8">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-                <div class="text-center md:text-left">
+        <header class="relative bg-gradient-to-br from-grass-900 via-grass-800 to-emerald-950 text-white py-8 px-4 shadow-lg mb-8">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-6">
+                
+                <!-- BLOC GAUCHE : Titres + Boutons en ligne sous l'horaire -->
+                <div class="text-center md:text-left flex flex-col items-center md:items-start w-full md:w-auto">
                     <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full">CASSON • 22 MAI 2027</span>
+                    
                     <h1 class="text-3xl md:text-5xl font-extrabold mt-3 tracking-tight flex items-center justify-center md:justify-start gap-3">
                         <i class="fa-solid fa-volleyball text-grass-500 animate-spin" style="animation-duration: 8s;"></i> Tournoi de volley 4x4 sur herbe
                     </h1>
-                    <p class="text-sm md:text-base text-emerald-100/80 mt-1"> Début 10h30 | Fin 18h00</p>
+                    
+                    <p class="text-sm md:text-base text-emerald-100/80 mt-1 mb-4">Début 10h30 | Fin 18h00</p>
+        
+                    <!-- Boutons de navigation en ligne -->
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                        <button onclick="openInNewTab('matches')" class="h-10 bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-gamepad text-white"></i> 
+                            <span>Saisie des Scores & Matchs</span> 
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </button> 
+        
+                        <button onclick="openInNewTab('results')" class="h-10 bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-tv text-grass-600"></i> 
+                            <span>Résultats & Tableau</span> 
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
+                        </button>
+        
+                        <button onclick="openInNewTab('tv')" class="h-10 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play text-white"></i> 
+                            <span>Direct</span> 
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
+                        </button>
+        
+                        <button onclick="openInNewTab('history')" class="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-history"></i> 
+                            <span>Historique des Résultats</span> 
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="flex flex-col items-stretch sm:items-center gap-2">
+        
+                <!-- BLOC DROITE : Bouton Admin uniquement (Isolé en haut à droite) -->
+                <div class="self-center md:self-start flex-shrink-0">
                     <button id="admin-auth-btn" onclick="toggleAdminAuth()" 
-                            class="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-2 px-3 rounded-xl transition shadow-sm">
+                            class="h-10 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-3 rounded-xl transition shadow-sm flex items-center justify-center gap-2 border border-emerald-600/50">
                         <i id="admin-auth-icon" class="fa-solid fa-lock"></i>
                         <span id="admin-auth-label">Connexion Admin</span>
                     </button>
-                    <button onclick="openInNewTab('matches')" class="bg-grass-500 hover:bg-grass-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-gamepad text-white"></i> Saisie des Scores & Matchs <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                    </button> 
-                    <button onclick="openInNewTab('results')" class="bg-white text-grass-900 hover:bg-gray-100 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-tv text-grass-600"></i> Résultats & Tableau <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400"></i>
-                    </button>
-                    <button onclick="openInNewTab('tv')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play text-white"></i> Direct <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-white/70"></i>
-                    </button>
-                    <button onclick="openInNewTab('history')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition duration-200 flex items-center gap-2 text-xs">
-                        <i class="fa-solid fa-history"></i> Historique des Résultats <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                    </button>
                 </div>
+        
             </div>
         </header>
 
